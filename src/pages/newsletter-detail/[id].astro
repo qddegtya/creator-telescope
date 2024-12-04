@@ -1,0 +1,24 @@
+---
+import NewsLetterDetailLayout from "../../layouts/NewsLetterDetailLayout.astro";
+import { getEntry, render, getCollection } from "astro:content";
+
+export async function getStaticPaths() {
+  const newsletters = await getCollection("newsletters");
+  return newsletters.map((newsletter) => {
+    return {
+      params: {
+        id: newsletter.id,
+      },
+    };
+  });
+}
+
+const { id } = Astro.params;
+
+const entry = await getEntry("newsletters", id);
+const { Content, headings } = await render(entry);
+---
+
+<NewsLetterDetailLayout>
+  <Content />
+</NewsLetterDetailLayout>

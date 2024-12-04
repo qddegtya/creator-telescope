@@ -1,0 +1,21 @@
+---
+import NewsLetterListLayout from "../layouts/NewsLetterListLayout.astro";
+
+import { getCollection } from "astro:content";
+const newsletters = await getCollection("newsletters");
+---
+
+<NewsLetterListLayout>
+  <h1 class="newsletters__showtitle">🔥 最近 10 期</h1>
+  <ul class="newsletters__list">
+    {
+      newsletters.map((newsletter) => (
+        <li class="newsletters__item">
+          <a href={`/newsletter-detail/${newsletter.id}`}>
+            {newsletter.data.title}
+          </a>
+        </li>
+      ))
+    }
+  </ul>
+</NewsLetterListLayout>

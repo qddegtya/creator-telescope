@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="generator" content={Astro.generator} />
+    <title>NewsLetter-List</title>
+  </head>
+  <body>
+    <div class="newsletters__body">
+      <h1 class="newsletters__title text-gradient">🔭 Creator Telescope</h1>
+      <h3 class="newsletters__subtitle">为创造者而生的高质量内容周刊</h3>
+      <div class="newsletters__main">
+        <slot />
+      </div>
+      <h3 class="newsletters__footer">© 2024 creator-telescope.</h3>
+    </div>
+  </body>
+</html>
+
+<style>
+  html,
+  body {
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    background-color: #f9f9f9;
+  }
+
+  .newsletters__body {
+    width: 100%;
+    max-width: 640px;
+
+    padding: 64px 12px;
+    box-sizing: border-box;
+
+    h1,
+    h3,
+    ul,
+    li {
+      margin: 0;
+      padding: 0;
+    }
+
+    .newsletters__list {
+    }
+
+		.newsletters__item:last-child {
+			border: none;
+		}
+
+    .newsletters__item {
+      list-style: none;
+      width: 100%;
+      box-sizing: border-box;
+      padding: 10px;
+      border-bottom: 1px dashed #f0f0f0;
+      background-color: #ffffff;
+
+      a {
+        color: #999999;
+        font-size: 12px;
+
+        text-decoration: none;
+        font-weight: 200;
+      }
+    }
+
+    .newsletters__item:hover {
+      background-color: #f9f9f9;
+    }
+
+    .newsletters__title {
+      font-size: 32px;
+      line-height: 32px;
+
+      text-align: center;
+    }
+
+    .newsletters__showtitle {
+      font-size: 14px;
+      line-height: 28px;
+
+      color: #666666;
+      border-left: 8px solid #f0f0f0;
+      padding-left: 8px;
+
+      padding-top: 8px;
+      padding-bottom: 8px;
+
+      border-bottom: 1px solid #f0f0f0;
+
+      background-color: #f9f9f9;
+
+      font-weight: 400;
+    }
+
+    .newsletters__subtitle {
+      font-size: 14px;
+      line-height: 42px;
+      text-align: center;
+
+      color: #999999;
+      font-weight: 200;
+
+      letter-spacing: 4px;
+    }
+
+    .newsletters__footer {
+      font-size: 12px;
+      line-height: 24px;
+
+      color: #cccccc;
+      font-weight: 200;
+
+      letter-spacing: 1px;
+    }
+
+    .text-gradient {
+      background: #959595;
+      background: linear-gradient(
+        to right,
+        #959595 0%,
+        #0d0d0d 46%,
+        #010101 50%,
+        #0a0a0a 53%,
+        #4e4e4e 76%,
+        #383838 87%,
+        #1b1b1b 100%
+      );
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .newsletters__main {
+      width: 100%;
+      border: 1px solid #f0f0f0;
+      background-color: #ffffff;
+
+      margin-top: 4px;
+      margin-bottom: 16px;
+
+      border-radius: 10px;
+
+      box-sizing: border-box;
+
+      overflow: hidden;
+
+      -webkit-box-shadow: 5px 5px 0 0 #f0f0f0;
+      -moz-box-shadow: 5px 5px 0 0 #f0f0f0;
+      box-shadow: 5px 5px 0 0 #f0f0f0;
+    }
+  }
+</style>

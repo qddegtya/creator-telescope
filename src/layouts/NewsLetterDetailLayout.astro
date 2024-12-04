@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="generator" content={Astro.generator} />
+    <title>NewsLetter-Detail</title>
+  </head>
+  <body>
+    <div class="newsletterdetail__body">
+      <div class="newsletterdetail__main">
+        <slot />
+      </div>
+    </div>
+  </body>
+</html>
+
+<style>
+  html,
+  body {
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    background-color: #f9f9f9;
+  }
+
+  .newsletterdetail__body {
+    width: 100%;
+    max-width: 640px;
+    padding: 64px 12px;
+
+    box-sizing: border-box;
+
+    img {
+      width: 100%;
+    }
+
+    .newsletterdetail__main {
+      width: 100%;
+
+      overflow: hidden;
+      border-radius: 10px;
+
+      box-sizing: border-box;
+      border: 1px solid #f0f0f0;
+      padding: 30px;
+      background-color: #ffffff;
+
+      -webkit-box-shadow: 5px 5px 0 0 #f0f0f0;
+      -moz-box-shadow: 5px 5px 0 0 #f0f0f0;
+      box-shadow: 5px 5px 0 0 #f0f0f0;
+    }
+  }
+</style>
