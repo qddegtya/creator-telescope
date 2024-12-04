@@ -52,5 +52,5 @@ summary: "fdsafafdsafsafsafsafa"
      </div>
    </div>
 
-   <h3 style="display: block;font-size: 12px;color: #cccccc;font-weight: 200;margin: 0;padding: 0;margin-top: 20px;">审核 By @Archer</h3>
+   <h3 style="display: block;text-align: center;font-size: 12px;color: #cccccc;font-weight: 200;margin: 0;padding: 0;margin-top: 20px;">整理 & 审核 By @Archer</h3>
 </div>

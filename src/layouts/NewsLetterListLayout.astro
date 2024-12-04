@@ -1,3 +1,7 @@
+---
+import creatorTelescopeLogo from "../assets/creator-telescope-logo.svg";
+---
+
 <!doctype html>
 <html lang="en">
   <head>
@@ -12,8 +16,23 @@
   </head>
   <body>
     <div class="newsletters__body">
-      <h1 class="newsletters__title text-gradient">🔭 Creator Telescope</h1>
-      <h3 class="newsletters__subtitle">为创造者而生的高质量内容周刊</h3>
+      <div class="newsletters__header">
+        <div class="newsletters__logo">
+          <a href="javascript:void(0);"
+            ><img
+              src={creatorTelescopeLogo.src}
+              width="72"
+              height="72"
+              alt="Creator Telescope"
+            /></a
+          >
+        </div>
+
+        <div class="newsletters__meta">
+          <h1 class="newsletters__title text-gradient">Creator Telescope</h1>
+          <h3 class="newsletters__subtitle">为创造者而生的高质量内容周刊</h3>
+        </div>
+      </div>
       <div class="newsletters__main">
         <slot />
       </div>
@@ -43,20 +62,46 @@
     padding: 64px 12px;
     box-sizing: border-box;
 
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+
+    .newsletters__meta {
+      
+    }
+
+    .newsletters__header {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+
+      margin-bottom: 16px;
+    }
+
+    .newsletters__logo {
+      margin-right: 16px;
+    }
+
     h1,
     h3,
     ul,
-    li {
+    li,
+    a,
+    img {
       margin: 0;
       padding: 0;
+    }
+
+    img {
+      outline: none;
     }
 
     .newsletters__list {
     }
 
-		.newsletters__item:last-child {
-			border: none;
-		}
+    .newsletters__item:last-child {
+      border: none;
+    }
 
     .newsletters__item {
       list-style: none;
@@ -80,10 +125,10 @@
     }
 
     .newsletters__title {
-      font-size: 32px;
-      line-height: 32px;
+      font-size: 24px;
+      line-height: 24px;
 
-      text-align: center;
+      font-weight: 600;
     }
 
     .newsletters__showtitle {
@@ -105,9 +150,8 @@
     }
 
     .newsletters__subtitle {
-      font-size: 14px;
-      line-height: 42px;
-      text-align: center;
+      font-size: 12px;
+      line-height: 24px;
 
       color: #999999;
       font-weight: 200;
