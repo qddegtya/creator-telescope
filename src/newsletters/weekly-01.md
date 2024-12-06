@@ -5,7 +5,7 @@ summary: "fdsafafdsafsafsafsafa"
 
 <div>
    <h3 style="display: block;margin: 0;width: 100%;text-align: center;color: #4e4e4e;font-size: 18px;border-bottom: 1px solid #f0f0f0;padding-bottom: 10px;font-weight: 200;">
-     🔭 Creator Telescope - 周刊.01
+     Creator Telescope - 周刊.01
    </h3>
 
    <div style="border-bottom: 1px solid #f0f0f0;padding-bottom: 15px;">

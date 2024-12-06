@@ -1,57 +1,41 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 250 250">
-  <defs>
-    <!-- 更复杂的渐变背景 -->
-    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#1A2B4A" stop-opacity="0.95"/>
-      <stop offset="50%" stop-color="#162035" stop-opacity="0.98"/>
-      <stop offset="100%" stop-color="#0E1627" stop-opacity="0.95"/>
-    </linearGradient>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" style="background-color: transparent;">
+    <!-- 圆形裁剪 -->
+    <defs>
+        <clipPath id="circleView">
+            <circle cx="200" cy="200" r="200"/>
+        </clipPath>
+    </defs>
     
-    <!-- 高级发光和深度效果 -->
-    <filter id="advancedGlow" x="-50%" y="-50%" width="200%" height="200%">
-      <feGaussianBlur stdDeviation="4" result="shadowBlur"/>
-      <feOffset dx="0" dy="2" result="shadow"/>
-      <feComposite in="SourceGraphic" in2="shadow" operator="over"/>
-      <feColorMatrix type="matrix" values="0 0 0 0 0.2
-                                           0 0 0 0 0.4
-                                           0 0 0 0 0.8
-                                           0 0 0 1 0"/>
-    </filter>
-  </defs>
-  
-  <!-- 背景圆形 -->
-  <circle cx="125" cy="125" r="120" fill="url(#bgGradient)"/>
-  
-  <!-- 望远镜概念层 -->
-  <g filter="url(#advancedGlow)">
-    <!-- 更复杂的分层效果 -->
-    <circle cx="125" cy="125" r="100" fill="#2563EB" opacity="0.1"/>
-    
-    <!-- 精密的网格线 -->
-    <g stroke="#4A9FE2" stroke-width="0.8" opacity="0.2">
-      <line x1="45" y1="45" x2="205" y2="205" stroke-dasharray="2,2"/>
-      <line x1="205" y1="45" x2="45" y2="205" stroke-dasharray="2,2"/>
-      <line x1="125" y1="45" x2="125" y2="205" stroke-dasharray="2,2"/>
-      <line x1="45" y1="125" x2="205" y2="125" stroke-dasharray="2,2"/>
-      
-      <!-- 额外的对角线 -->
-      <line x1="60" y1="60" x2="190" y2="190" stroke-dasharray="2,2" opacity="0.1"/>
-      <line x1="190" y1="60" x2="60" y2="190" stroke-dasharray="2,2" opacity="0.1"/>
+    <g clip-path="url(#circleView)">
+        <!-- 极简望远镜抽象图形 -->
+        <g transform="translate(200,200)">
+            <!-- 主体三角形 -->
+            <path 
+                d="M0 -100 L-60 100 L60 100 Z" 
+                fill="#000000" 
+                opacity="0.8"
+            />
+            
+            <!-- 细线增强科技感 -->
+            <line 
+                x1="0" 
+                y1="-120" 
+                x2="0" 
+                y2="120" 
+                stroke="#000000" 
+                stroke-width="2" 
+                opacity="0.3"
+            />
+        </g>
     </g>
     
-    <!-- 分层镜头 -->
-    <circle cx="125" cy="125" r="50" fill="#0284C7" opacity="0.4"/>
-    <circle cx="125" cy="125" r="40" fill="#0284C7" opacity="0.6"/>
-    
-    <!-- 动态突破线条 -->
-    <path d="M125,35 Q185,95 125,155 Q65,215 125,235" 
-          stroke="#38BDF8" 
-          stroke-width="2" 
-          fill="none" 
-          opacity="0.6"
-          stroke-linecap="round"/>
-    
-    <!-- 细节光晕 -->
-    <circle cx="125" cy="125" r="5" fill="#FFFFFF" opacity="0.3"/>
-  </g>
+    <!-- 细圆框 -->
+    <circle 
+        cx="200" 
+        cy="200" 
+        r="199" 
+        fill="none" 
+        stroke="#000000" 
+        stroke-width="1"
+    />
 </svg>
