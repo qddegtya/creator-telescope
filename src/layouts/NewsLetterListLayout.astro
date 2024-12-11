@@ -1,5 +1,6 @@
 ---
 import creatorTelescopeLogo from "../assets/creator-telescope-logo.svg";
+const copyrightYear = (new Date).getFullYear()
 ---
 
 <!doctype html>
@@ -36,7 +37,7 @@ import creatorTelescopeLogo from "../assets/creator-telescope-logo.svg";
       <div class="newsletters__main">
         <slot />
       </div>
-      <h3 class="newsletters__footer">© 2024 creator-telescope.</h3>
+      <h3 class="newsletters__footer">© {copyrightYear} creator-telescope.</h3>
     </div>
   </body>
 </html>
