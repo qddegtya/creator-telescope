@@ -1,5 +1,6 @@
 {
   "name": "creator-telescope",
+  "description": "🔭 Creator-telescope Weekly Publication.",
   "type": "module",
   "version": "1.0.0",
   "scripts": {
