@@ -16,14 +16,14 @@ const { teaser, description, title, link } = Astro.props;
     {teaser ? <img src={teaser} /> : null}
     {
       description ? (
-        <h3 style="margin: 0;padding: 0;color: #999999;font-size: 14px;border-left: 5px solid #999999;padding-left: 10px;font-weight: normal;margin: 10px 0;display: block;">
+        <h3 style="margin: 0;padding: 0;color: #999999;font-size: 14px;border-left: 5px solid #999999;padding-left: 10px;font-weight: normal;margin: 10px 0;display: block;letter-spacing: 1px;word-break: break-all;word-wrap: break-word;">
           {description}
         </h3>
       ) : null
     }
     {
       title ? (
-        <h3 style="display: block;text-align:center;margin: 0;padding: 0;color: #333333;font-size: 16px;font-weight: normal;">
+        <h3 style="display: block;text-align:center;margin: 0;padding: 0;color: #333333;font-size: 16px;font-weight: normal;margin-bottom: 10px;word-break: break-all;word-wrap: break-word;">
           {title}
         </h3>
       ) : null
