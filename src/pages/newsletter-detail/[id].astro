@@ -21,7 +21,7 @@ const { id } = Astro.params;
 const entry = await getEntry("newsletters", id);
 ---
 
-<NewsLetterDetailLayout>
+<NewsLetterDetailLayout id={id}>
   <NewsletterContainer
     id={id}
     summary={entry?.data?.summary}
