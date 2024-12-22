@@ -1,6 +1,6 @@
 ---
 import creatorTelescopeLogo from "../assets/creator-telescope-logo.svg";
-const copyrightYear = (new Date).getFullYear()
+const copyrightYear = new Date().getFullYear();
 ---
 
 <!doctype html>
@@ -37,7 +37,15 @@ const copyrightYear = (new Date).getFullYear()
       <div class="newsletters__main">
         <slot />
       </div>
-      <h3 class="newsletters__footer">© {copyrightYear} creator-telescope.</h3>
+      <h3 class="newsletters__footer">
+        © {copyrightYear} Creator Telescope.
+        <br />
+        <a
+          href="https://github.com/qddegtya/creator-telescope"
+          title="Fork me on GitHub"
+          target="_blank">Fork me on GitHub</a
+        >.
+      </h3>
     </div>
   </body>
 </html>
@@ -68,7 +76,8 @@ const copyrightYear = (new Date).getFullYear()
     align-items: center;
 
     .newsletters__meta {
-      h1, h3 {
+      h1,
+      h3 {
         word-wrap: break-word;
         word-break: break-all;
       }
@@ -114,7 +123,7 @@ const copyrightYear = (new Date).getFullYear()
       padding: 10px;
       border-bottom: 1px dashed #f0f0f0;
       background-color: #ffffff;
-      
+
       em {
         display: block;
         margin: 0;
@@ -189,6 +198,12 @@ const copyrightYear = (new Date).getFullYear()
 
       word-wrap: break-word;
       word-break: break-all;
+
+      text-align: center;
+
+      a {
+        color: #999999;
+      }
     }
 
     .text-gradient {
