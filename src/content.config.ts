@@ -6,9 +6,7 @@ import type { ValidUrl } from "./types";
 const newsletters = defineCollection({
   loader: glob({ pattern: "**/*.md", base: "./src/newsletters" }),
   schema: z.object({
-    title: z.string(),
     summary: z.string(),
-    footer: z.string(),
     contentList: z.array(
       z.object({
         // TODO: regex ?

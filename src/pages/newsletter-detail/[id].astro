@@ -22,7 +22,10 @@ const entry = await getEntry("newsletters", id);
 ---
 
 <NewsLetterDetailLayout>
-  <NewsletterContainer title={entry?.data?.title} footer={entry?.data?.footer}>
+  <NewsletterContainer
+    id={id}
+    summary={entry?.data?.summary}
+  >
     {
       entry?.data?.contentList.map((content) => {
         return (

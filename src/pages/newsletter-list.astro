@@ -12,8 +12,9 @@ const newsletters = await getCollection("newsletters");
       newsletters.map((newsletter) => (
         <li class="newsletters__item">
           <a href={`/newsletter-detail/${newsletter.id}`}>
-            {newsletter.data.title}
+            {`Creator Telescope - ${newsletter.id}`}
           </a>
+          <em>{newsletter?.data?.summary}</em>
         </li>
       ))
     }
