@@ -1,5 +1,6 @@
 import { defineCollection, z } from "astro:content";
 import { glob } from "astro/loaders";
+import type { ValidUrl } from "./types";
 
 // TODO: filter files
 const newsletters = defineCollection({
@@ -7,6 +8,16 @@ const newsletters = defineCollection({
   schema: z.object({
     title: z.string(),
     summary: z.string(),
+    footer: z.string(),
+    contentList: z.array(
+      z.object({
+        // TODO: regex ?
+        teaser: z.custom<ValidUrl>(),
+        link: z.custom<ValidUrl>(),
+        description: z.string(),
+        title: z.string(),
+      })
+    ),
   }),
 });
 

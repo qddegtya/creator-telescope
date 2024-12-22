@@ -1,0 +1,24 @@
+---
+interface Props {
+  footer: string | undefined;
+  title: string | undefined;
+}
+
+const { title, footer } = Astro.props;
+---
+
+<div>
+  <h3
+    style="display: block;margin: 0;width: 100%;text-align: center;color: #4e4e4e;font-size: 18px;border-bottom: 1px solid #f0f0f0;padding-bottom: 10px;font-weight: 200;"
+  >
+    {title}
+  </h3>
+
+  <slot />
+
+  <h3
+    style="display: block;text-align: center;font-size: 12px;color: #cccccc;font-weight: 200;margin: 0;padding: 0;margin-top: 20px;"
+  >
+    {footer}
+  </h3>
+</div>

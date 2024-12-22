@@ -1,6 +1,9 @@
 ---
 import NewsLetterDetailLayout from "../../layouts/NewsLetterDetailLayout.astro";
-import { getEntry, render, getCollection } from "astro:content";
+import NewsletterContainer from "../../components/NewsletterContainer.astro";
+import NewsletterItem from "../../components/NewsletterItem.astro";
+
+import { getEntry, getCollection } from "astro:content";
 
 export async function getStaticPaths() {
   const newsletters = await getCollection("newsletters");
@@ -16,9 +19,21 @@ export async function getStaticPaths() {
 const { id } = Astro.params;
 
 const entry = await getEntry("newsletters", id);
-const { Content, headings } = await render(entry);
 ---
 
 <NewsLetterDetailLayout>
-  <Content />
+  <NewsletterContainer title={entry?.data?.title} footer={entry?.data?.footer}>
+    {
+      entry?.data?.contentList.map((content) => {
+        return (
+          <NewsletterItem
+            teaser={content.teaser}
+            title={content.title}
+            description={content.description}
+            link={content.link}
+          />
+        );
+      })
+    }
+  </NewsletterContainer>
 </NewsLetterDetailLayout>
