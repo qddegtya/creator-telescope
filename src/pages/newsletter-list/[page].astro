@@ -1,0 +1,73 @@
+---
+import NewsLetterListLayout from "../../layouts/NewsLetterListLayout.astro";
+import { getCollection } from "astro:content";
+
+import type { GetStaticPaths } from "astro";
+
+const DEFAULT_PAGE_SIZE = 10;
+
+export const getStaticPaths = (async ({ paginate }) => {
+  const newsletters = await getCollection("newsletters");
+  return paginate(newsletters, { pageSize: DEFAULT_PAGE_SIZE });
+}) satisfies GetStaticPaths;
+
+const { page } = Astro.props;
+const totalPageNumber = Array.from({ length: page.lastPage }, (_, i) => i + 1);
+---
+
+<NewsLetterListLayout>
+  <h1 class="newsletters__showtitle">最近 10 期</h1>
+  <ul class="newsletters__list">
+    {
+      page.data.map((newsletter) => (
+        <li class="newsletters__item">
+          <a href={`/newsletter-detail/${newsletter.id}`}>
+            {`Creator Telescope - ${newsletter.id}`}
+          </a>
+          <em>{newsletter?.data?.summary}</em>
+        </li>
+      ))
+    }
+  </ul>
+
+  <div class="pagination__main">
+    {
+      page.lastPage > 1 && (
+        <nav>
+          {page.url.prev && <a href={page.url.prev}>上一页</a>}
+          {page.url.next && <a href={page.url.next}>下一页</a>}
+        </nav>
+      )
+    }
+  </div>
+</NewsLetterListLayout>
+
+<style>
+  .pagination__main {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    margin: 32px 0;
+
+    a {
+      display: inline-block;
+
+      padding: 8px;
+      background-color: #f9f9f9;
+      border: 1px solid #f0f0f0;
+
+      font-size: 12px;
+
+      border-radius: 10px;
+      text-decoration: none;
+
+      color: #999999;
+
+      -webkit-box-shadow: 5px 5px 0 0 #f0f0f0;
+      -moz-box-shadow: 5px 5px 0 0 #f0f0f0;
+      box-shadow: 5px 5px 0 0 #f0f0f0;
+
+      margin: 0 8px;
+    }
+  }
+</style>
