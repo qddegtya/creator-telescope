@@ -7,7 +7,7 @@ import type { GetStaticPaths } from "astro";
 export const getStaticPaths = (async ({ paginate }) => {
   const newsletters = await getCollection("newsletters");
   const DEFAULT_PAGE_SIZE = 10;
-  
+
   return paginate(newsletters, { pageSize: DEFAULT_PAGE_SIZE });
 }) satisfies GetStaticPaths;
 
@@ -30,16 +30,17 @@ const totalPageNumber = Array.from({ length: page.lastPage }, (_, i) => i + 1);
     }
   </ul>
 
-  <div class="pagination__main">
-    {
-      page.lastPage > 1 && (
+  {
+    /* 分页指示 */
+    page.lastPage > 1 && (
+      <div class="pagination__main">
         <nav>
           {page.url.prev && <a href={page.url.prev}>上一页</a>}
           {page.url.next && <a href={page.url.next}>下一页</a>}
         </nav>
-      )
-    }
-  </div>
+      </div>
+    )
+  }
 </NewsLetterListLayout>
 
 <style>

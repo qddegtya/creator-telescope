@@ -15,21 +15,21 @@ const { teaser, description, title, link } = Astro.props;
   <div style="margin-top: 30px;">
     {teaser ? <img src={teaser} style="background-color: #f9f9f9;border: 1px solid #f0f0f0;overflow: hidden;border-radius: 10px;"/> : null}
     {
-      description ? (
+      description && (
         <h3 style="margin: 0;padding: 0;color: #999999;font-size: 14px;border-left: 5px solid #f0f0f0;padding-left: 10px;font-weight: normal;margin: 10px 0;display: block;letter-spacing: 1px;word-break: break-all;word-wrap: break-word;">
           {description}
         </h3>
-      ) : null
+      )
     }
     {
-      title ? (
+      title && (
         <h3 style="display: block;text-align:center;margin: 0;padding: 0;color: #333333;font-size: 16px;font-weight: normal;margin-bottom: 10px;word-break: break-all;word-wrap: break-word;">
           {title}
         </h3>
-      ) : null
+      )
     }
     {
-      link ? (
+      link && (
         <a
           style="text-align:center;color: #3498db;margin: 0;padding: 0;font-size: 14px;line-height: 14px;display: block;margin-bottom: 10px;word-break: break-all;word-wrap: break-word;"
           href={link}
@@ -37,7 +37,7 @@ const { teaser, description, title, link } = Astro.props;
         >
           {link}
         </a>
-      ) : null
+      )
     }
   </div>
 </div>
