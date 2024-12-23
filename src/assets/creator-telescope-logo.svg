@@ -1,35 +1,42 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" style="background-color: transparent;">
-    <!-- 圆形裁剪 -->
     <defs>
         <clipPath id="circleView">
             <circle cx="200" cy="200" r="200"/>
         </clipPath>
+        
+        <style>
+            @keyframes telescopeRotate {
+                0% { transform: translate(200px, 200px) rotate(0deg) scale(0.9); }
+                50% { transform: translate(200px, 200px) rotate(180deg) scale(1.1); }
+                100% { transform: translate(200px, 200px) rotate(360deg) scale(0.9); }
+            }
+            @keyframes linePulse {
+                0% { opacity: 0.2; stroke-width: 1; }
+                50% { opacity: 0.6; stroke-width: 3; }
+                100% { opacity: 0.2; stroke-width: 1; }
+            }
+        </style>
     </defs>
     
     <g clip-path="url(#circleView)">
-        <!-- 极简望远镜抽象图形 -->
-        <g transform="translate(200,200)">
-            <!-- 主体三角形 -->
+        <g style="animation: telescopeRotate 8s ease-in-out infinite;">
             <path 
                 d="M0 -100 L-60 100 L60 100 Z" 
                 fill="#000000" 
                 opacity="0.8"
             />
             
-            <!-- 细线增强科技感 -->
             <line 
                 x1="0" 
                 y1="-120" 
                 x2="0" 
                 y2="120" 
                 stroke="#000000" 
-                stroke-width="2" 
-                opacity="0.3"
+                style="animation: linePulse 2s ease-in-out infinite;"
             />
         </g>
     </g>
     
-    <!-- 细圆框 -->
     <circle 
         cx="200" 
         cy="200" 
