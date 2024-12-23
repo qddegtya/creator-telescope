@@ -1,5 +1,6 @@
 ---
-summary: "AI & 大模型"
+date: 2024-08-01
+summary: "本期内容让我们初步一睹 AI & 大模型的风采。"
 contentList: [
   {
     teaser: "https://cdn.nlark.com/yuque/0/2023/png/359409/1683162061574-2ff6e0f5-35f8-4929-9cce-cc614001147c.png?x-oss-process=image%2Fformat%2Cwebp%2Fresize%2Cw_1500%2Climit_0",

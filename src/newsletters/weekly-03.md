@@ -1,5 +1,6 @@
 ---
-summary: "本期给大家带来 AI Agent & AI Force 精选内容，一次看个够，从我的 Read it Later 中挑选整理而成。"
+date: 2024-12-23
+summary: "本期给大家带来 AI Agent & AI Force 的相关精选，让你一次看个够，来自于我近期使用 CTP (https://github.com/qddegtya/r/tree/main/ctps/read-it-later) 自动化 AI 工作流采集的内容。"
 contentList: [
   {
     teaser: "https://cdn.prod.website-files.com/65b8cd72835ceeacd4449a53/6735c972bced5e29463aa2dc_3.%20In%20your%20opinion%2C%20which%20tasks.svg",

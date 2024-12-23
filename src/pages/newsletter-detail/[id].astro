@@ -24,6 +24,7 @@ const entry = await getEntry("newsletters", id);
 <NewsLetterDetailLayout id={id}>
   <NewsletterContainer
     id={id}
+    date={entry?.data?.date}
     summary={entry?.data?.summary}
   >
     {

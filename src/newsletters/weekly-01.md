@@ -1,5 +1,6 @@
 ---
-summary: "下一代生产力工具"
+date: 2024-06-01
+summary: "本期将围绕「下一代生产力工具」进行内容的分享。"
 contentList: [
   {
     teaser: "https://cdn.nlark.com/yuque/0/2023/png/359409/1676516723539-39f3fc27-0241-4e06-9e0a-02dc4aadea78.png?x-oss-process=image%2Fformat%2Cwebp",
