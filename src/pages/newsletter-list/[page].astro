@@ -4,10 +4,10 @@ import { getCollection } from "astro:content";
 
 import type { GetStaticPaths } from "astro";
 
-const DEFAULT_PAGE_SIZE = 10;
-
 export const getStaticPaths = (async ({ paginate }) => {
   const newsletters = await getCollection("newsletters");
+  const DEFAULT_PAGE_SIZE = 10;
+  
   return paginate(newsletters, { pageSize: DEFAULT_PAGE_SIZE });
 }) satisfies GetStaticPaths;
 
