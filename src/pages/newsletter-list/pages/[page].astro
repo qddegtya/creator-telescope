@@ -16,7 +16,7 @@ const totalPageNumber = Array.from({ length: page.lastPage }, (_, i) => i + 1);
 ---
 
 <NewsLetterListLayout>
-  <h1 class="newsletters__showtitle">最近 10 期</h1>
+  <h1 class="newsletters__showtitle">周刊列表</h1>
   <ul class="newsletters__list">
     {
       page.data.map((newsletter) => (
