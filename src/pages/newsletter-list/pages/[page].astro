@@ -3,12 +3,25 @@ import NewsLetterListLayout from "../../../layouts/NewsLetterListLayout.astro";
 import { getCollection } from "astro:content";
 
 import type { GetStaticPaths } from "astro";
+import type { CollectionEntry } from "astro:content";
 
 export const getStaticPaths = (async ({ paginate }) => {
-  const newsletters = await getCollection("newsletters");
+  const newsletters = (await getCollection(
+    "newsletters"
+  )) as CollectionEntry<"newsletters">[];
   const DEFAULT_PAGE_SIZE = 10;
 
-  return paginate(newsletters, { pageSize: DEFAULT_PAGE_SIZE });
+  return paginate(
+    newsletters.sort((a, b) => {
+      if (!a.data.date || !b.data.date) {
+        return 0;
+      }
+
+      // 默认降序
+      return b.data.date.getTime() - a.data.date.getTime();
+    }),
+    { pageSize: DEFAULT_PAGE_SIZE }
+  );
 }) satisfies GetStaticPaths;
 
 const { page } = Astro.props;
