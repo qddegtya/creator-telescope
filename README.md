@@ -16,3 +16,18 @@
 * 浏览器主页插件
 
 `Creator Telescope` 在内容上聚焦满足「独立开发」、「独立创客」、「创造者」等此类画像的用户可能关注的内容，包含技术指南、产品洞察、成功故事、一线资讯、深度思考等等。
+
+---
+
+`Creator Telescope` was founded by [Archer](https://xiaoa.name), who firmly believes that “the era of the creator economy” has arrived, and one-person companies and super-individuals are rapidly rising, especially with today's AI support.
+
+As we all know, the collection and processing of information has become very simple and comfortable, but the problem of information cocoon and information overload still exists, more and more users love high-quality content, and many platforms have gradually returned to the subscription logic instead of the recommendation logic, which is different from the positioning of blogs, and the `Newsletter` focuses more on thinking about the problem from the readers' point of view. There are also many ready-made platforms that can provide similar capabilities, such as `Substack` in foreign countries and `Small Newspaper Boy` in China, etc. Considering the principle of autonomy and control and prioritizing the user experience, `Creator Telescope` insists on using the method of `self-built platform`.
+
+Meanwhile, `Creator Telescope` insists on original content and reaches its readers with independent websites and weekly publications, and will gradually improve its functions and ecosystem later on:
+
+* Email subscription / RSS subscription
+* Search
+* Dark Mode
+* Browser homepage plugin
+
+`Creator Telescope` focuses on content that meets the needs of users with such profiles as `independent developers`, `independent creators`, `creators`, etc., including technical guides, product insights, success stories, front-line information, in-depth thoughts, etc.
