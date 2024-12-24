@@ -3,6 +3,12 @@ date: 2024-12-23
 summary: "本期给大家带来 AI Agent & AI Force 的相关精选，让你一次看个够，来自于我近期使用 CTP (https://github.com/qddegtya/r/tree/main/ctps/read-it-later) 自动化 AI 工作流采集的内容。"
 contentList: [
   {
+    teaser: "https://www.anthropic.com/_next/image?url=https%3A%2F%2Fwww-cdn.anthropic.com%2Fimages%2F4zrzovbb%2Fwebsite%2F58d9f10c985c4eb5d53798dea315f7bb5ab6249e-2401x1000.png&w=3840&q=75",
+    link: "https://www.anthropic.com/research/building-effective-agents",
+    description: "Anthropic 最新出炉的关于构建 Agent 的文章，非常接地气，也很务实，强烈推荐一读。",
+    title: "Building effective agents",
+  },
+  {
     teaser: "https://cdn.prod.website-files.com/65b8cd72835ceeacd4449a53/6735c972bced5e29463aa2dc_3.%20In%20your%20opinion%2C%20which%20tasks.svg",
     link: "https://www.langchain.com/stateofaiagents",
     description: "到了 2024 年，人工智能代理将不再是小众兴趣。各行各业的公司都在更加严肃地考虑将代理整合到他们的工作流程中——从自动化日常任务，到协助数据分析或编写代码。",
