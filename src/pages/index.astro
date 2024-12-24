@@ -17,6 +17,11 @@ import Layout from "../layouts/Layout.astro";
         <h3 class="newsletters__subtitle">为创造者而生的高质量内容周刊</h3>
       </div>
     </div>
+
+    <nav class="newsletters__nav">
+      <a href="/newsletter-list">周刊</a>
+      <a href="/">关于</a>
+    </nav>
   </div>
 </Layout>
 
@@ -157,6 +162,7 @@ import Layout from "../layouts/Layout.astro";
   ul,
   li,
   a,
+  nav,
   img {
     margin: 0;
     padding: 0;
@@ -196,7 +202,7 @@ import Layout from "../layouts/Layout.astro";
       color: #999999;
       font-weight: 200;
 
-      letter-spacing: 1rem;
+      letter-spacing: 0.8rem;
       padding-right: 0.4rem;
 
       overflow: hidden;
@@ -253,6 +259,33 @@ import Layout from "../layouts/Layout.astro";
       );
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
+    }
+  }
+
+  .newsletters__nav {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+
+    a {
+      display: inline-block;
+
+      padding: 8px;
+      background-color: #f9f9f9;
+      border: 1px solid #f0f0f0;
+
+      font-size: 12px;
+
+      border-radius: 10px;
+      text-decoration: none;
+
+      color: #999999;
+
+      -webkit-box-shadow: 5px 5px 0 0 #f0f0f0;
+      -moz-box-shadow: 5px 5px 0 0 #f0f0f0;
+      box-shadow: 5px 5px 0 0 #f0f0f0;
+
+      margin: 8px;
     }
   }
 </style>
