@@ -1,9 +1,258 @@
 ---
-import Layout from '../layouts/Layout.astro';
-
-// Welcome to Astro! Wondering what to do next? Check out the Astro documentation at https://docs.astro.build
-// Don't want to use any of this? Delete everything in this file, the `assets`, `components`, and `layouts` directories, and start fresh.
+import creatorTelescopeLogo from "../assets/creator-telescope-logo.svg";
+import Layout from "../layouts/Layout.astro";
 ---
 
 <Layout>
+  <div class="newsletters__homepage">
+    <div class="newsletters__m">
+      <div class="newsletters__logo">
+        <a href="/newsletter-list"
+          ><img src={creatorTelescopeLogo.src} alt="Creator Telescope" /></a
+        >
+      </div>
+
+      <div class="newsletters__meta">
+        <h1 class="newsletters__title text-gradient">Creator Telescope</h1>
+        <h3 class="newsletters__subtitle">为创造者而生的高质量内容周刊</h3>
+      </div>
+    </div>
+  </div>
 </Layout>
+
+<style>
+  /* montserrat-regular - latin */
+  @font-face {
+    font-family: "Montserrat";
+    font-style: normal;
+    font-weight: 400;
+    src:
+      local(""),
+      url("/fonts/montserrat/montserrat-v23-latin-regular.woff2")
+        format("woff2"),
+      /* Chrome 26+, Opera 23+, Firefox 39+ */
+        url("/fonts/montserrat/montserrat-v23-latin-regular.woff")
+        format("woff"); /* Chrome 6+, Firefox 3.6+, IE 9+, Safari 5.1+ */
+  }
+  /* montserrat-600 - latin */
+  @font-face {
+    font-family: "Montserrat";
+    font-style: normal;
+    font-weight: 600;
+    src:
+      local(""),
+      url("/fonts/montserrat/montserrat-v23-latin-600.woff2") format("woff2"),
+      /* Chrome 26+, Opera 23+, Firefox 39+ */
+        url("/fonts/montserrat/montserrat-v23-latin-600.woff") format("woff"); /* Chrome 6+, Firefox 3.6+, IE 9+, Safari 5.1+ */
+  }
+  /* montserrat-italic - latin */
+  @font-face {
+    font-family: "Montserrat";
+    font-style: italic;
+    font-weight: 400;
+    src:
+      local(""),
+      url("/fonts/montserrat/montserrat-v23-latin-italic.woff2") format("woff2"),
+      /* Chrome 26+, Opera 23+, Firefox 39+ */
+        url("/fonts/montserrat/montserrat-v23-latin-italic.woff") format("woff"); /* Chrome 6+, Firefox 3.6+, IE 9+, Safari 5.1+ */
+  }
+  /* montserrat-600italic - latin */
+  @font-face {
+    font-family: "Montserrat";
+    font-style: italic;
+    font-weight: 600;
+    src:
+      local(""),
+      url("/fonts/montserrat/montserrat-v23-latin-600italic.woff2")
+        format("woff2"),
+      /* Chrome 26+, Opera 23+, Firefox 39+ */
+        url("/fonts/montserrat/montserrat-v23-latin-600italic.woff")
+        format("woff"); /* Chrome 6+, Firefox 3.6+, IE 9+, Safari 5.1+ */
+  }
+
+  @keyframes typing {
+    from {
+      width: 0;
+    }
+    to {
+      width: 100%;
+    }
+  }
+
+  @keyframes blink-caret {
+    50% {
+      border-color: transparent;
+    }
+  }
+
+  /* 超小屏幕 */
+  @media (max-width: 320px) {
+    html {
+      font-size: 37.5%; /* 6px */
+    }
+  }
+
+  /* 小屏幕 */
+  @media (min-width: 321px) and (max-width: 375px) {
+    html {
+      font-size: 43.75%; /* 7px */
+    }
+  }
+
+  /* 中小屏幕 */
+  @media (min-width: 376px) and (max-width: 425px) {
+    html {
+      font-size: 50%; /* 8px */
+    }
+  }
+
+  /* 小屏幕 */
+  @media (max-width: 576px) {
+    html {
+      font-size: 43.75%; /* 7px */
+    }
+  }
+
+  /* 中屏幕 */
+  @media (min-width: 577px) and (max-width: 768px) {
+    html {
+      font-size: 50%; /* 8px */
+    }
+  }
+
+  /* 中大屏幕 */
+  @media (min-width: 769px) and (max-width: 992px) {
+    html {
+      font-size: 56.25%; /* 9px */
+    }
+  }
+
+  /* 大屏幕 */
+  @media (min-width: 993px) and (max-width: 1200px) {
+    html {
+      font-size: 62.5%; /* 10px */
+    }
+  }
+
+  /* 超大屏幕 */
+  @media (min-width: 1201px) and (max-width: 1919px) {
+    html {
+      font-size: 75%; /* 12px */
+    }
+  }
+
+  html,
+  body {
+    margin: 0;
+    padding: 0;
+
+    /* 更适合中文阅读的字体设置 */
+    font-family: "Montserrat", "SF UI Text", "PingFang SC", "Hiragino Sans GB",
+      "Microsoft YaHei", "Segoe UI", "Helvetica Neue", Helvetica,
+      "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", sans-serif !important;
+  }
+
+  h1,
+  h3,
+  ul,
+  li,
+  a,
+  img {
+    margin: 0;
+    padding: 0;
+  }
+
+  img {
+    outline: none;
+  }
+
+  .newsletters__homepage {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    box-sizing: border-box;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+
+    .newsletters__meta {
+      h1,
+      h3 {
+        word-wrap: break-word;
+        word-break: break-all;
+      }
+    }
+
+    .newsletters__subtitle {
+      font-size: 1.6rem;
+      line-height: 1.6rem;
+
+      color: #999999;
+      font-weight: 200;
+
+      letter-spacing: 1rem;
+      padding-right: 0.4rem;
+
+      overflow: hidden;
+      border-right: 1px solid #333333;
+      white-space: nowrap;
+      animation:
+        typing 4s steps(30, end) infinite,
+        blink-caret 0.75s step-end infinite;
+    }
+
+    .newsletters__m {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+    }
+
+    .newsletters__logo {
+      margin-right: 16px;
+
+      a {
+        img {
+          width: 7.2rem;
+          height: 7.2rem;
+        }
+      }
+    }
+
+    .newsletters__title {
+      font-size: 3.6rem;
+      line-height: 3.6rem;
+
+      font-weight: 600;
+
+      /* 加在 subtitle 更合理，先注释 + 保留 */
+      /* overflow: hidden;
+      border-right: 1px solid #333333;
+      white-space: nowrap;
+      animation:
+        typing 4s steps(30, end) infinite,
+        blink-caret 0.75s step-end infinite; */
+    }
+
+    .text-gradient {
+      background: #959595;
+      background: linear-gradient(
+        to right,
+        #959595 0%,
+        #0d0d0d 46%,
+        #010101 50%,
+        #0a0a0a 53%,
+        #4e4e4e 76%,
+        #383838 87%,
+        #1b1b1b 100%
+      );
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+  }
+</style>
