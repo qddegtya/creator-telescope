@@ -1,5 +1,5 @@
 ---
-import listLogo from "../assets/list.svg";
+import returnToListIcon from "../assets/return-to-list.svg";
 
 interface Props {
   summary: string | undefined;
@@ -14,7 +14,7 @@ const { summary, id, date } = Astro.props;
   <div style="position: absolute;top: 0;left: 0;">
     <a href="/newsletter-list" title="返回列表页"
       ><img
-        src={listLogo.src}
+        src={returnToListIcon.src}
         width="32"
         height="32"
         alt="Creator Telescope"
