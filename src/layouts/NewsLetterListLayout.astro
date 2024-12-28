@@ -1,6 +1,7 @@
 ---
 import creatorTelescopeLogo from "../assets/creator-telescope-logo.svg";
 const copyrightYear = new Date().getFullYear();
+const canonicalURL = new URL(Astro.url.pathname, Astro.site);
 ---
 
 <!doctype html>
@@ -11,6 +12,8 @@ const copyrightYear = new Date().getFullYear();
       name="viewport"
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
     />
+    <link rel="canonical" href={canonicalURL} />
+    
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="generator" content={Astro.generator} />
     <title>Creator Telescope</title>
