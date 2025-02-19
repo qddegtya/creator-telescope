@@ -1,5 +1,11 @@
 ---
-const { id } = Astro.props;
+const { id, summary } = Astro.props;
+const canonicalURL = new URL(Astro.url.pathname, Astro.site);
+
+const title = `Creator Telescope - ${id}`;
+import creatorTelescopeLogo from "../assets/creator-telescope-logo.svg";
+
+const socialImageURL = new URL(creatorTelescopeLogo.src, Astro.site);
 ---
 
 <!doctype html>
@@ -11,9 +17,53 @@ const { id } = Astro.props;
       name="viewport"
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
     />
+    <link rel="canonical" href={canonicalURL} />
+    
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="generator" content={Astro.generator} />
-    <title>{`Creator Telescope - ${id}`}</title>
+
+    <title>{title}</title>
+    <meta name="description" content={summary} />
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content='article' />
+    <meta property="og:url" content={canonicalURL} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={summary} />
+    <meta property="og:image" content={socialImageURL} />
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:url" content={canonicalURL} />
+    <meta property="twitter:title" content={title} />
+    <meta property="twitter:description" content={summary} />
+    <meta property="twitter:image" content={socialImageURL} />
+
+    <!-- 可选: 额外的社交媒体标签 -->
+    <!-- 微信分享 -->
+    <meta itemprop="name" content={title} />
+    <meta itemprop="description" content={summary} />
+    <meta itemprop="image" content={socialImageURL} />
+
+    <!-- QQ 分享 -->
+    <meta name="qq:title" content={title} />
+    <meta name="qq:description" content={summary} />
+    <meta name="qq:image" content={socialImageURL} />
+
+    <!-- 微博分享 -->
+    <meta property="weibo:title" content={title} />
+    <meta property="weibo:description" content={summary} />
+    <meta property="weibo:image" content={socialImageURL} />
+    <meta property="weibo:webpage:type" content='article' />
+    <meta property="weibo:webpage:url" content={canonicalURL} />
+
+    <!-- 百度分享 -->
+    <meta name="baidu:title" content={title} />
+    <meta name="baidu:description" content={summary} />
+    <meta name="baidu:image" content={socialImageURL} />
+
+    <!-- 百度移动搜索 -->
+    <meta name="mobile-agent" content={`format=html5;url=${canonicalURL}`}>
   </head>
   <body>
     <div class="newsletterdetail__body">
