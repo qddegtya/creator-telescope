@@ -3,12 +3,14 @@
   "description": "🔭 Creator-telescope Weekly Publication.",
   "type": "module",
   "version": "1.0.0",
+  "packageManager": "yarn@1.22.22",
   "scripts": {
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
     "astro": "astro"
   },
+  "license": "MIT",
   "dependencies": {
     "astro": "^5.0.2"
   }
