@@ -3,6 +3,12 @@ date: 2025-02-21
 summary: "本期我们整理了关于 MCP 的精选内容，MCP 全称：Model Context Protocol，即模型上下文协议，它是 Anthropic 推出的一种开放协议，旨在统一 LLM 应用于外部数据源之间的通讯协议使之无缝集成，MCP 提供了标准化协议使得 LLM 与所需要的上下文无缝衔接。使用 MCP 可以插件式为 LLM 的集成各种外部数据源，从技术价值角度而言，它和编辑器领域的 LSP 语言服务器协议的定位很相似，从实用角度而言，MCP 打开了大模型落地的潘多拉魔盒。"
 contentList: [
   {
+    teaser: "https://hua4ti0jahunt2um.public.blob.vercel-storage.com/newsletters/weekly-04/cursor-x-claude-3.7-sonnet-f7g3YGp6lXtMetZIf9LVQK736vh75H.png",
+    link: "https://www.anthropic.com/news/claude-3-7-sonnet",
+    description: "Today, we’re announcing Claude 3.7 Sonnet1, our most intelligent model to date and the first hybrid reasoning model on the market. Claude 3.7 Sonnet can produce near-instant responses or extended, step-by-step thinking that is made visible to the user. API users also have fine-grained control over how long the model can think for.",
+    title: "🎉 Claude 3.7 Sonnet and Claude Code 发布，Cursor 第一时间跟进",
+  },
+  {
     teaser: "https://www.anthropic.com/_next/image?url=https%3A%2F%2Fwww-cdn.anthropic.com%2Fimages%2F4zrzovbb%2Fwebsite%2F3aabd8804251c0364cbde9d2e4be6dc8e8c2faec-2880x1620.png&w=3840&q=75",
     link: "https://www.anthropic.com/news/model-context-protocol",
     description: "MCP 的官方介绍，先认识一下 MCP，😄",
