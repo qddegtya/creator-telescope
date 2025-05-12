@@ -21,13 +21,13 @@ contentList: [
   {
     teaser: "https://hua4ti0jahunt2um.public.blob.vercel-storage.com/newsletters/weekly-05/the-real-reason-openai-bought-windsurf-v0-knqgtodvs7ze1-d75mPIxqOlJcfhfitEulxUkmrM0KmU.webp",
     link: "https://news.ycombinator.com/item?id=43743993",
-    description: "OpenAI 收购 Windsurf 引发热议，HN 的这个帖子信息量很大，其中又一些很有意思的观点和讨论。",
+    description: "OpenAI 收购 Windsurf 引发热议，HN 的这个帖子信息量很大，其中有一些很有意思的观点和讨论。",
     title: "OpenAI 为什么要收购 Windsurf ？",
   },
   {
     teaser: "https://hua4ti0jahunt2um.public.blob.vercel-storage.com/newsletters/weekly-05/02pm-QZFyPGQjWpeU0vkkCsxcfLXUwjyxZH.webp",
     link: "https://karpathy.bearblog.dev/vibe-coding-menugen/",
-    description: "Andrej Karpathy，没错，是那个大神，使用 Vibe Coding 上线了一个菜单生成 App，并且分享了他作为一个完全没有应用开发背景的人员，是如何使用 AI Coding 进行产品开发的，分享的非常详尽、细节：包括心得、踩的坑以及感受，值得一提的是，这个应用已经上线了，也就是我们常说的「生产环境可用」，本身也非常有价值，在他的这篇博客中有提到。",
+    description: "Andrej Karpathy，没错，就是那个大神，使用 Vibe Coding 上线了一个菜单生成 App，并且分享了他作为一个完全没有应用开发背景的人员，是如何使用 AI Coding 进行产品开发的，分享的内容非常详尽、细节：包括心得、踩坑点以及感受，值得一提的是，这个应用已经上线了，也就是我们常说的「生产环境可用」，App 本身也非常实用，在他的这篇博客中有提到访问地址，读者可以体验一下。",
     title: "Andrej Karpathy 使用 Vibe Coding 上线了一个菜单生成 App！",
   },
 ]
