@@ -11,33 +11,36 @@ interface Props {
 const { teaser, description, title, link } = Astro.props;
 ---
 
-<div style="border-bottom: 1px solid #f0f0f0;padding-bottom: 15px;">
-  <div style="margin-top: 30px;">
-    {teaser ? <img src={teaser} alt={title} style="background-color: #f9f9f9;border: 1px solid #f0f0f0;overflow: hidden;border-radius: 10px;"/> : null}
-    {
-      description && (
-        <h3 style="margin: 0;padding: 0;color: #999999;font-size: 14px;border-left: 5px solid #f0f0f0;padding-left: 10px;font-weight: normal;margin: 10px 0;display: block;letter-spacing: 1px;word-break: break-all;word-wrap: break-word;">
-          {description}
-        </h3>
-      )
-    }
-    {
-      title && (
-        <h3 style="display: block;text-align:center;margin: 0;padding: 0;color: #333333;font-size: 16px;font-weight: normal;margin-bottom: 10px;word-break: break-all;word-wrap: break-word;">
-          {title}
-        </h3>
-      )
-    }
-    {
-      link && (
-        <a
-          style="text-align:center;color: #3498db;margin: 0;padding: 0;font-size: 14px;line-height: 14px;display: block;margin-bottom: 10px;word-break: break-all;word-wrap: break-word;"
-          href={link}
-          target="_blank"
-        >
-          {link}
-        </a>
-      )
-    }
+<article style="border-bottom: 1px solid rgba(0, 0, 0, 0.06);padding-bottom: 24px;margin-bottom: 24px;">
+  <div style="margin-top: 0;">
+    {teaser ? (
+      <div style="margin-bottom: 16px;">
+        <img src={teaser} alt={title} style="width: 100%;background-color: #fafafa;border-radius: 3px;display: block;"/>
+      </div>
+    ) : null}
+    
+    {title && (
+      <h3 style="margin: 0 0 12px 0;padding: 0;color: #000000;font-size: 18px;font-weight: 600;line-height: 24px;word-break: break-all;word-wrap: break-word;">
+        {title}
+      </h3>
+    )}
+    
+    {description && (
+      <div style="margin: 0 0 16px 0;padding: 16px;color: #666666;font-size: 14px;border-left: 3px solid #000000;background-color: #fafafa;font-weight: 400;line-height: 20px;letter-spacing: 0.3px;word-break: break-all;word-wrap: break-word;border-radius: 0 3px 3px 0;">
+        {description}
+      </div>
+    )}
+    
+    {link && (
+      <a
+        style="display: inline-block;color: #000000;margin: 0;padding: 8px 12px;font-size: 13px;line-height: 16px;border: 1px solid rgba(0, 0, 0, 0.08);border-radius: 3px;text-decoration: none;background-color: #ffffff;transition: all 0.15s ease;word-break: break-all;word-wrap: break-word;"
+        href={link}
+        target="_blank"
+        onmouseover="this.style.borderColor='rgba(0,0,0,0.2)';this.style.boxShadow='0 2px 8px rgba(0,0,0,0.08)'"
+        onmouseout="this.style.borderColor='rgba(0,0,0,0.08)';this.style.boxShadow='none'"
+      >
+        访问链接 →
+      </a>
+    )}
   </div>
-</div>
+</article>

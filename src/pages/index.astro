@@ -154,12 +154,18 @@ import Layout from "../layouts/Layout.astro";
     margin: 0;
     padding: 0;
 
-    background-color: #f9f9f9;
+    background-color: #fafafa;
 
     /* 更适合中文阅读的字体设置 */
     font-family: "Montserrat", "SF UI Text", "PingFang SC", "Hiragino Sans GB",
       "Microsoft YaHei", "Segoe UI", "Helvetica Neue", Helvetica,
       "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", sans-serif !important;
+      
+    transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  body.page-transition {
+    opacity: 0;
   }
 
   h1,
@@ -204,14 +210,14 @@ import Layout from "../layouts/Layout.astro";
       font-size: 1.6rem;
       line-height: 1.6rem;
 
-      color: #999999;
-      font-weight: 200;
+      color: #666666;
+      font-weight: 400;
 
-      letter-spacing: 0.8rem;
+      letter-spacing: 0.6rem;
       padding-right: 0.4rem;
 
       overflow: hidden;
-      border-right: 1px solid #333333;
+      border-right: 1px solid #000000;
       white-space: nowrap;
       animation:
         typing 4s steps(30, end) infinite,
@@ -273,26 +279,41 @@ import Layout from "../layouts/Layout.astro";
     display: flex;
     flex-direction: row;
     justify-content: center;
+    margin-top: 32px;
 
     a {
       display: inline-block;
 
-      padding: 8px 16px;
-      background-color: #f9f9f9;
-      border: 1px solid #f0f0f0;
+      padding: 12px 20px;
+      background-color: #ffffff;
+      border: 1px solid rgba(0, 0, 0, 0.08);
 
-      font-size: 12px;
+      font-size: 14px;
+      font-weight: 500;
 
-      border-radius: 10px;
+      border-radius: 3px;
       text-decoration: none;
 
-      color: #999999;
+      color: #000000;
 
-      -webkit-box-shadow: 5px 5px 0 0 #f0f0f0;
-      -moz-box-shadow: 5px 5px 0 0 #f0f0f0;
-      box-shadow: 5px 5px 0 0 #f0f0f0;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      transform: translateY(0) scale(1);
+      will-change: transform, box-shadow, border-color;
 
-      margin: 8px;
+      margin: 0 8px;
+    }
+
+    a:hover {
+      border-color: rgba(0, 0, 0, 0.2);
+      box-shadow: 
+        0 4px 12px rgba(0, 0, 0, 0.08),
+        0 1px 4px rgba(0, 0, 0, 0.04);
+      transform: translateY(-1px) scale(1.02);
+    }
+
+    a:active {
+      transform: translateY(0) scale(0.98);
+      transition: all 0.1s ease;
     }
   }
 </style>

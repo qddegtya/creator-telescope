@@ -66,11 +66,78 @@ const socialImageURL = new URL(creatorTelescopeLogo.src, Astro.site);
     <meta name="mobile-agent" content={`format=html5;url=${canonicalURL}`}>
   </head>
   <body>
+    <!-- 阅读进度条 -->
+    <div class="reading-progress-container">
+      <div class="reading-progress-bar"></div>
+    </div>
+    
+    <!-- 回到顶部按钮 -->
+    <button id="back-to-top" class="back-to-top" style="display: none;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="18,15 12,9 6,15"></polyline>
+      </svg>
+    </button>
+    
     <div class="newsletterdetail__body">
       <div class="newsletterdetail__main">
         <slot />
       </div>
     </div>
+    
+    <script is:inline>
+      // 阅读进度条功能
+      function initReadingProgress() {
+        const progressBar = document.querySelector('.reading-progress-bar');
+        const main = document.querySelector('.newsletterdetail__main');
+        
+        if (!progressBar || !main) return;
+        
+        function updateProgress() {
+          const scrollTop = window.pageYOffset;
+          const docHeight = document.body.offsetHeight;
+          const winHeight = window.innerHeight;
+          const totalScroll = docHeight - winHeight;
+          const progress = Math.min(Math.max(scrollTop / totalScroll, 0), 1);
+          
+          progressBar.style.transform = `scaleX(${progress})`;
+        }
+        
+        window.addEventListener('scroll', updateProgress, { passive: true });
+        updateProgress(); // 初始化
+      }
+      
+      // 回到顶部功能
+      function initBackToTop() {
+        const backToTopBtn = document.getElementById('back-to-top');
+        if (!backToTopBtn) return;
+        
+        // 监听滚动事件
+        function handleScroll() {
+          if (window.pageYOffset > 300) {
+            backToTopBtn.style.display = 'flex';
+          } else {
+            backToTopBtn.style.display = 'none';
+          }
+        }
+        
+        // 点击回到顶部
+        function scrollToTop() {
+          window.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+          });
+        }
+        
+        window.addEventListener('scroll', handleScroll, { passive: true });
+        backToTopBtn.addEventListener('click', scrollToTop);
+      }
+      
+      // 页面加载完成后初始化功能
+      document.addEventListener('DOMContentLoaded', function() {
+        initReadingProgress();
+        initBackToTop();
+      });
+    </script>
   </body>
 </html>
 
@@ -141,13 +208,39 @@ const socialImageURL = new URL(creatorTelescopeLogo.src, Astro.site);
     width: 100%;
     display: flex;
     justify-content: center;
-    background-color: #f9f9f9;
+    background-color: #fafafa;
+    min-height: 100vh;
+    
+    transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  body.page-transition {
+    opacity: 0;
+  }
+  
+  /* 阅读进度条样式 */
+  .reading-progress-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background-color: rgba(0, 0, 0, 0.06);
+    z-index: 1000;
+  }
+  
+  .reading-progress-bar {
+    height: 100%;
+    background-color: #000000;
+    transform-origin: left center;
+    transform: scaleX(0);
+    transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .newsletterdetail__body {
     width: 100%;
-    max-width: 640px;
-    padding: 64px 12px;
+    max-width: 680px;
+    padding: 32px 16px;
 
     box-sizing: border-box;
 
@@ -155,20 +248,105 @@ const socialImageURL = new URL(creatorTelescopeLogo.src, Astro.site);
       width: 100%;
 
       overflow: hidden;
-      border-radius: 10px;
+      border-radius: 6px;
 
       box-sizing: border-box;
-      border: 1px solid #f0f0f0;
-      padding: 30px;
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      padding: 40px;
       background-color: #ffffff;
 
-      -webkit-box-shadow: 5px 5px 0 0 #f0f0f0;
-      -moz-box-shadow: 5px 5px 0 0 #f0f0f0;
-      box-shadow: 5px 5px 0 0 #f0f0f0;
+      box-shadow: 
+        0 0 0 1px rgba(0, 0, 0, 0.02),
+        0 1px 2px rgba(0, 0, 0, 0.06);
+
+      /* 优化排版字间距和行高 */
+      line-height: 1.75;
+      letter-spacing: 0.02em;
+
+      h1, h2, h3, h4, h5, h6 {
+        line-height: 1.4;
+        letter-spacing: 0.01em;
+        margin-top: 2em;
+        margin-bottom: 0.8em;
+      }
+      
+      h1:first-child, h2:first-child, h3:first-child {
+        margin-top: 0;
+      }
+
+      p {
+        margin-bottom: 1.4em;
+        word-spacing: 0.05em;
+      }
 
       img {
         width: 100%;
+        border-radius: 3px;
+        margin: 1.5em 0;
+      }
+      
+      ul, ol {
+        line-height: 1.8;
+        margin: 1.2em 0;
+        padding-left: 1.8em;
+      }
+      
+      li {
+        margin-bottom: 0.5em;
+      }
+      
+      blockquote {
+        line-height: 1.7;
+        letter-spacing: 0.01em;
+        margin: 1.5em 0;
+        padding: 1em 1.5em;
+        border-left: 3px solid rgba(0, 0, 0, 0.1);
+        background-color: rgba(0, 0, 0, 0.02);
       }
     }
+  }
+  
+  /* 回到顶部按钮样式 */
+  .back-to-top {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    width: 48px;
+    height: 48px;
+    
+    background-color: #ffffff;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 50%;
+    
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    
+    color: #666666;
+    cursor: pointer;
+    
+    box-shadow: 
+      0 2px 8px rgba(0, 0, 0, 0.1),
+      0 1px 4px rgba(0, 0, 0, 0.04);
+    
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transform: translateY(0) scale(1);
+    will-change: transform, box-shadow, border-color;
+    
+    z-index: 1000;
+  }
+  
+  .back-to-top:hover {
+    border-color: rgba(0, 0, 0, 0.2);
+    color: #000000;
+    box-shadow: 
+      0 4px 16px rgba(0, 0, 0, 0.12),
+      0 2px 8px rgba(0, 0, 0, 0.06);
+    transform: translateY(-2px) scale(1.05);
+  }
+  
+  .back-to-top:active {
+    transform: translateY(-1px) scale(1.02);
+    transition: all 0.1s ease;
   }
 </style>

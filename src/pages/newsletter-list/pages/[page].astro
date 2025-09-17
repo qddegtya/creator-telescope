@@ -29,8 +29,32 @@ const totalPageNumber = Array.from({ length: page.lastPage }, (_, i) => i + 1);
 ---
 
 <NewsLetterListLayout>
-  <h1 class="newsletters__showtitle">周刊列表</h1>
-  <ul class="newsletters__list">
+  <div class="view-controls">
+    <h1 class="newsletters__showtitle">周刊列表</h1>
+    <div class="view-toggle">
+      <button class="view-btn" data-view="list" onclick="switchView('list')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="8" y1="6" x2="21" y2="6"></line>
+          <line x1="8" y1="12" x2="21" y2="12"></line>
+          <line x1="8" y1="18" x2="21" y2="18"></line>
+          <line x1="3" y1="6" x2="3.01" y2="6"></line>
+          <line x1="3" y1="12" x2="3.01" y2="12"></line>
+          <line x1="3" y1="18" x2="3.01" y2="18"></line>
+        </svg>
+      </button>
+      <button class="view-btn active" data-view="gallery" onclick="switchView('gallery')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="7" height="7"></rect>
+          <rect x="14" y="3" width="7" height="7"></rect>
+          <rect x="14" y="14" width="7" height="7"></rect>
+          <rect x="3" y="14" width="7" height="7"></rect>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- 列表视图 -->
+  <ul class="newsletters__list" id="list-view" style="display: none;">
     {
       page.data.map((newsletter) => (
         <li class="newsletters__item">
@@ -42,6 +66,37 @@ const totalPageNumber = Array.from({ length: page.lastPage }, (_, i) => i + 1);
       ))
     }
   </ul>
+
+  <!-- 相册视图 -->
+  <div class="newsletters__gallery" id="gallery-view">
+    {
+      page.data.map((newsletter) => (
+        <article class="newsletter-card">
+          <a href={`/newsletter-detail/${newsletter.id}`} class="card-link">
+            <div class="card-header">
+              <div class="card-thumbnail">
+                {newsletter.data.contentList && newsletter.data.contentList[0]?.teaser ? (
+                  <img src={newsletter.data.contentList[0].teaser} alt={newsletter.id} loading="lazy" />
+                ) : (
+                  <div class="placeholder-thumbnail">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                      <path d="M14.828 14.828a4 4 0 0 1-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/>
+                    </svg>
+                  </div>
+                )}
+              </div>
+              <div class="card-badge">{newsletter.id}</div>
+            </div>
+            <div class="card-content">
+              <h3 class="card-title">{`Creator Telescope - ${newsletter.id}`}</h3>
+              <p class="card-summary">{newsletter?.data?.summary}</p>
+              <time class="card-date">{newsletter.data.date?.toLocaleDateString('zh-CN')}</time>
+            </div>
+          </a>
+        </article>
+      ))
+    }
+  </div>
 
   {
     /* 分页指示 */
@@ -62,33 +117,427 @@ const totalPageNumber = Array.from({ length: page.lastPage }, (_, i) => i + 1);
     padding: 0;
   }
 
+  .view-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0;
+    padding: 16px;
+    background-color: #fafafa;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  }
+
+  .view-toggle {
+    display: flex;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 3px;
+    overflow: hidden;
+    background-color: #ffffff;
+  }
+
+  .view-btn {
+    background: transparent;
+    border: none;
+    padding: 6px 10px;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    color: #666666;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    position: relative;
+    transform: scale(1);
+    will-change: transform, background-color, color;
+  }
+
+  .view-btn:hover {
+    background-color: #f5f5f5;
+    color: #000000;
+    transform: scale(1.05);
+  }
+
+  .view-btn:active {
+    transform: scale(0.95);
+    transition: all 0.1s ease;
+  }
+
+  .view-btn.active {
+    background-color: #000000;
+    color: #ffffff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  }
+
+  .view-btn.active:hover {
+    background-color: #333333;
+    transform: scale(1.05);
+  }
+
+  /* 相册视图样式 */
+  .newsletters__gallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+    padding: 16px;
+    background-color: #ffffff;
+  }
+
+  @media (max-width: 640px) {
+    .newsletters__gallery {
+      grid-template-columns: 1fr;
+      gap: 12px;
+      padding: 12px;
+    }
+  }
+
+  .newsletter-card {
+    background-color: #ffffff;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 3px;
+    overflow: hidden;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transform: translateY(0) scale(1);
+    will-change: transform, box-shadow, border-color;
+  }
+
+  .newsletter-card:hover {
+    border-color: rgba(0, 0, 0, 0.2);
+    box-shadow: 
+      0 4px 20px rgba(0, 0, 0, 0.08),
+      0 1px 4px rgba(0, 0, 0, 0.04);
+    transform: translateY(-2px) scale(1.01);
+  }
+
+  .newsletter-card:active {
+    transform: translateY(-1px) scale(1.005);
+    transition: all 0.1s ease;
+  }
+
+  .card-link {
+    text-decoration: none;
+    color: inherit;
+    display: block;
+    height: 100%;
+  }
+
+  .card-header {
+    position: relative;
+    height: 140px;
+    overflow: hidden;
+    background-color: #fafafa;
+  }
+
+  .card-thumbnail {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .card-thumbnail img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    
+    /* 默认可见，只在明确需要加载状态时隐藏 */
+    opacity: 1;
+    transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .card-thumbnail img.loading {
+    opacity: 0.3;
+  }
+  
+  .card-thumbnail img.loaded {
+    opacity: 1;
+  }
+  
+  /* 图片加载状态指示器 - 只在loading状态显示 */
+  .card-thumbnail.loading::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    margin: -10px 0 0 -10px;
+    
+    border: 2px solid rgba(0, 0, 0, 0.1);
+    border-top-color: rgba(0, 0, 0, 0.3);
+    border-radius: 50%;
+    
+    animation: loading-spin 1s linear infinite;
+    opacity: 1;
+    transition: opacity 0.3s ease;
+    z-index: 1;
+  }
+  
+  .card-thumbnail.loaded::before {
+    opacity: 0;
+    animation: none;
+  }
+  
+  @keyframes loading-spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  .placeholder-thumbnail {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    color: #cccccc;
+    background-color: #fafafa;
+  }
+  
+  /* 图片错误状态样式 */
+  .card-thumbnail.error {
+    background-color: #fafafa;
+  }
+  
+  .card-thumbnail.error::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 24px;
+    height: 24px;
+    margin: -12px 0 0 -12px;
+    
+    background-image: url("data:image/svg+xml,%3Csvg width='24' height='24' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M14.828 14.828a4 4 0 0 1-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z' stroke='%23cccccc' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: contain;
+    
+    opacity: 0.6;
+  }
+  
+  .card-thumbnail.error img {
+    display: none;
+  }
+
+  .card-badge {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background-color: #000000;
+    color: #ffffff;
+    padding: 2px 6px;
+    border-radius: 2px;
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+  }
+
+  .card-content {
+    padding: 16px;
+  }
+
+  .card-title {
+    font-size: 14px;
+    font-weight: 500;
+    color: #000000;
+    margin: 0 0 8px 0;
+    line-height: 20px;
+    
+    transition: color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .newsletter-card:hover .card-title {
+    color: #000000;
+  }
+
+  .card-summary {
+    font-size: 13px;
+    color: #666666;
+    line-height: 18px;
+    margin: 0 0 12px 0;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    
+    transition: color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .newsletter-card:hover .card-summary {
+    color: #555555;
+  }
+
+  .card-date {
+    font-size: 11px;
+    color: #999999;
+    font-weight: 400;
+  }
+
   .pagination__main {
     display: flex;
     flex-direction: row;
     justify-content: center;
 
-    border-top: 1px dashed #f0f0f0;
-    padding: 16px 0;
+    border-top: 1px solid rgba(0, 0, 0, 0.06);
+    padding: 16px;
+    background-color: #fafafa;
 
     a {
       display: inline-block;
 
-      padding: 8px;
-      background-color: #f9f9f9;
-      border: 1px solid #f0f0f0;
+      padding: 8px 12px;
+      background-color: #ffffff;
+      border: 1px solid rgba(0, 0, 0, 0.08);
 
       font-size: 12px;
 
-      border-radius: 10px;
+      border-radius: 3px;
       text-decoration: none;
 
-      color: #999999;
+      color: #666666;
+      font-weight: 500;
 
-      -webkit-box-shadow: 5px 5px 0 0 #f0f0f0;
-      -moz-box-shadow: 5px 5px 0 0 #f0f0f0;
-      box-shadow: 5px 5px 0 0 #f0f0f0;
+      transition: all 0.15s ease;
 
-      margin: 8px;
+      margin: 0 4px;
+    }
+
+    a:hover {
+      border-color: rgba(0, 0, 0, 0.2);
+      color: #000000;
     }
   }
 </style>
+
+<script is:inline>
+  function switchView(viewType) {
+    const listView = document.getElementById('list-view');
+    const galleryView = document.getElementById('gallery-view');
+    const buttons = document.querySelectorAll('.view-btn');
+    
+    // 切换按钮状态
+    buttons.forEach(btn => {
+      btn.classList.remove('active');
+      if (btn.dataset.view === viewType) {
+        btn.classList.add('active');
+      }
+    });
+    
+    // 切换视图
+    if (viewType === 'list') {
+      listView.style.display = 'block';
+      galleryView.style.display = 'none';
+    } else {
+      listView.style.display = 'none';
+      galleryView.style.display = 'grid';
+    }
+    
+    // 保存用户偏好
+    localStorage.setItem('preferredView', viewType);
+  }
+  
+  // 页面过渡动画
+  function initPageTransition() {
+    // 页面加载完成后移除过渡状态
+    document.body.classList.remove('page-transition');
+    
+    // 为所有内部链接添加过渡效果
+    const internalLinks = document.querySelectorAll('a[href^="/"]');
+    internalLinks.forEach(link => {
+      link.addEventListener('click', function(e) {
+        e.preventDefault();
+        document.body.classList.add('page-transition');
+        
+        // 短暂延迟后跳转
+        setTimeout(() => {
+          window.location.href = this.href;
+        }, 150);
+      });
+    });
+  }
+  
+  
+  // 图片懒加载和加载状态管理
+  function initImageLoading() {
+    const images = document.querySelectorAll('.card-thumbnail img');
+    
+    images.forEach(img => {
+      const container = img.closest('.card-thumbnail');
+      
+      // 检查图片是否已经完全加载
+      const isImageLoaded = () => {
+        return img.complete && img.naturalWidth > 0;
+      };
+      
+      // 检查图片是否加载失败（浏览器已尝试加载但失败）
+      const isImageError = () => {
+        return img.complete && img.naturalWidth === 0;
+      };
+      
+      // 图片加载完成时的处理
+      const handleLoad = () => {
+        img.classList.remove('loading');
+        img.classList.add('loaded');
+        if (container) {
+          container.classList.remove('loading');
+          container.classList.add('loaded');
+        }
+      };
+      
+      // 图片加载失败时的处理
+      const handleError = () => {
+        img.classList.remove('loading');
+        if (container) {
+          container.classList.remove('loading');
+          container.classList.add('loaded');
+          container.classList.add('error'); // 添加错误状态
+        }
+        // 隐藏破损的图片，显示占位符
+        img.style.display = 'none';
+        console.log('图片加载失败:', img.src);
+      };
+      
+      // 开始加载状态的处理
+      const startLoading = () => {
+        if (!isImageLoaded()) {
+          img.classList.add('loading');
+          if (container) {
+            container.classList.add('loading');
+          }
+        }
+      };
+      
+      // 检查图片当前状态
+      if (isImageLoaded()) {
+        // 图片已经成功加载
+        handleLoad();
+      } else if (isImageError()) {
+        // 图片已经尝试加载但失败了
+        console.log('图片加载失败（已完成但无效）:', img.src);
+        handleError();
+      } else {
+        // 图片还在加载中，设置加载状态和事件监听
+        startLoading();
+        img.addEventListener('load', handleLoad);
+        img.addEventListener('error', handleError);
+        
+        // 设置超时，避免无限加载状态
+        setTimeout(() => {
+          if (!isImageLoaded() && !img.classList.contains('loaded')) {
+            console.log('图片加载超时:', img.src);
+            handleError();
+          }
+        }, 8000); // 8秒超时，给第三方图片更多时间
+      }
+    });
+  }
+  
+  // 页面加载时恢复用户偏好和初始化功能
+  document.addEventListener('DOMContentLoaded', function() {
+    const preferredView = localStorage.getItem('preferredView') || 'gallery';
+    switchView(preferredView);
+    initPageTransition();
+    initImageLoading();
+  });
+</script>
