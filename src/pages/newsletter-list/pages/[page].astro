@@ -31,25 +31,41 @@ const totalPageNumber = Array.from({ length: page.lastPage }, (_, i) => i + 1);
 <NewsLetterListLayout>
   <div class="view-controls">
     <h1 class="newsletters__showtitle">周刊列表</h1>
-    <div class="view-toggle">
-      <button class="view-btn" data-view="list" onclick="switchView('list')">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <line x1="8" y1="6" x2="21" y2="6"></line>
-          <line x1="8" y1="12" x2="21" y2="12"></line>
-          <line x1="8" y1="18" x2="21" y2="18"></line>
-          <line x1="3" y1="6" x2="3.01" y2="6"></line>
-          <line x1="3" y1="12" x2="3.01" y2="12"></line>
-          <line x1="3" y1="18" x2="3.01" y2="18"></line>
-        </svg>
-      </button>
-      <button class="view-btn active" data-view="gallery" onclick="switchView('gallery')">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <rect x="3" y="3" width="7" height="7"></rect>
-          <rect x="14" y="3" width="7" height="7"></rect>
-          <rect x="14" y="14" width="7" height="7"></rect>
-          <rect x="3" y="14" width="7" height="7"></rect>
-        </svg>
-      </button>
+    <div class="control-group">
+      <div class="view-toggle">
+        <button class="view-btn" data-view="list" onclick="switchView('list')">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="8" y1="6" x2="21" y2="6"></line>
+            <line x1="8" y1="12" x2="21" y2="12"></line>
+            <line x1="8" y1="18" x2="21" y2="18"></line>
+            <line x1="3" y1="6" x2="3.01" y2="6"></line>
+            <line x1="3" y1="12" x2="3.01" y2="12"></line>
+            <line x1="3" y1="18" x2="3.01" y2="18"></line>
+          </svg>
+        </button>
+        <button class="view-btn active" data-view="gallery" onclick="switchView('gallery')">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="7" height="7"></rect>
+            <rect x="14" y="3" width="7" height="7"></rect>
+            <rect x="14" y="14" width="7" height="7"></rect>
+            <rect x="3" y="14" width="7" height="7"></rect>
+          </svg>
+        </button>
+      </div>
+      
+      <div class="column-toggle" id="column-controls" style="display: none;">
+        <button class="column-btn" data-columns="1" onclick="switchColumns(1)">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="6" y="3" width="12" height="18" rx="2"></rect>
+          </svg>
+        </button>
+        <button class="column-btn active" data-columns="2" onclick="switchColumns(2)">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="7" height="18" rx="2"></rect>
+            <rect x="14" y="3" width="7" height="18" rx="2"></rect>
+          </svg>
+        </button>
+      </div>
     </div>
   </div>
 
@@ -68,7 +84,7 @@ const totalPageNumber = Array.from({ length: page.lastPage }, (_, i) => i + 1);
   </ul>
 
   <!-- 相册视图 -->
-  <div class="newsletters__gallery" id="gallery-view">
+  <div class="newsletters__gallery columns-2" id="gallery-view">
     {
       page.data.map((newsletter) => (
         <article class="newsletter-card">
@@ -117,45 +133,80 @@ const totalPageNumber = Array.from({ length: page.lastPage }, (_, i) => i + 1);
     padding: 0;
   }
 
+  /* 缩小标题尺寸，更加低调 */
+  .newsletters__showtitle {
+    font-size: 12px !important;
+    line-height: 16px !important;
+    font-weight: 500 !important;
+    color: #666666 !important;
+    letter-spacing: 0.3px;
+  }
+
   .view-controls {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 0;
-    padding: 16px;
+    padding: 10px 16px;
     background-color: #fafafa;
     border-bottom: 1px solid rgba(0, 0, 0, 0.06);
   }
 
-  .view-toggle {
+  .control-group {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .view-toggle, .column-toggle {
     display: flex;
     border: 1px solid rgba(0, 0, 0, 0.08);
-    border-radius: 4px;
+    border-radius: 3px;
     overflow: hidden;
     background: linear-gradient(135deg, #ffffff 0%, #fafafa 100%);
+    height: 28px;
+    align-items: center;
     
-    /* 按钮组容器阴影 */
+    /* 按钮组容器阴影 - 更轻微 */
     box-shadow: 
-      0 1px 2px rgba(0, 0, 0, 0.04),
-      0 0 0 1px rgba(255, 255, 255, 0.1) inset,
-      0 1px 0 rgba(255, 255, 255, 0.3) inset;
+      0 1px 2px rgba(0, 0, 0, 0.03),
+      0 0 0 1px rgba(255, 255, 255, 0.08) inset,
+      0 1px 0 rgba(255, 255, 255, 0.2) inset;
+  }
+  
+  .view-toggle .view-btn:not(:last-child) {
+    border-right: 1px solid rgba(0, 0, 0, 0.06);
+  }
+  
+  .column-toggle .column-btn:not(:last-child) {
+    border-right: 1px solid rgba(0, 0, 0, 0.06);
+  }
+  
+  .view-btn.active:last-child,
+  .column-btn.active:last-child {
+    border-right-color: transparent;
   }
 
   .view-btn {
     position: relative;
     background: transparent;
     border: none;
-    padding: 8px 12px;
+    padding: 0;
+    margin: 0;
     cursor: pointer;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     color: #666666;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 12px;
+    font-size: 10px;
     font-weight: 500;
     transform: translateY(0);
     will-change: transform, background-color, color, box-shadow;
+    height: 100%;
+    width: 28px;
+    flex: none;
+    box-sizing: border-box;
     
     /* 微妙的内阴影 */
     box-shadow: 0 0 0 1px rgba(0, 0, 0, 0) inset;
@@ -203,8 +254,9 @@ const totalPageNumber = Array.from({ length: page.lastPage }, (_, i) => i + 1);
   .view-btn.active {
     background: linear-gradient(135deg, #2d2d2d 0%, #1a1a1a 100%);
     color: #ffffff;
-    border-color: transparent;
+    border-right-color: rgba(0, 0, 0, 0.3);
     transform: translateY(-1px);
+    z-index: 1;
     box-shadow: 
       0 2px 4px rgba(0, 0, 0, 0.15),
       0 4px 8px rgba(0, 0, 0, 0.1),
@@ -239,13 +291,169 @@ const totalPageNumber = Array.from({ length: page.lastPage }, (_, i) => i + 1);
       0 0 0 1px rgba(255, 255, 255, 0.1) inset;
   }
 
+  /* 列数控制按钮样式 */
+  .column-btn {
+    position: relative;
+    background: transparent;
+    border: none;
+    padding: 0;
+    margin: 0;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    color: #666666;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: 500;
+    transform: translateY(0);
+    will-change: transform, background-color, color, box-shadow;
+    height: 100%;
+    width: 28px;
+    flex: none;
+    box-sizing: border-box;
+    
+    /* 微妙的内阴影 */
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0) inset;
+    
+    /* 按钮表面质感 */
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(180deg, 
+        rgba(255, 255, 255, 0.1) 0%, 
+        transparent 50%, 
+        rgba(0, 0, 0, 0.02) 100%);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      pointer-events: none;
+    }
+  }
+
+  .column-btn:hover {
+    background: linear-gradient(135deg, #f8f8f8 0%, #f0f0f0 100%);
+    color: #000000;
+    transform: translateY(-1px);
+    box-shadow: 
+      0 1px 2px rgba(0, 0, 0, 0.06) inset,
+      0 1px 3px rgba(0, 0, 0, 0.1);
+      
+    &::before {
+      opacity: 1;
+    }
+  }
+
+  .column-btn:active {
+    transform: translateY(0);
+    background: linear-gradient(135deg, #f0f0f0 0%, #e8e8e8 100%);
+    box-shadow: 
+      0 2px 4px rgba(0, 0, 0, 0.1) inset,
+      0 0 1px rgba(0, 0, 0, 0.2) inset;
+    transition: all 0.1s ease;
+  }
+
+  .column-btn.active {
+    background: linear-gradient(135deg, #2d2d2d 0%, #1a1a1a 100%);
+    color: #ffffff;
+    border-right-color: rgba(0, 0, 0, 0.3);
+    transform: translateY(-1px);
+    z-index: 1;
+    box-shadow: 
+      0 2px 4px rgba(0, 0, 0, 0.15),
+      0 4px 8px rgba(0, 0, 0, 0.1),
+      0 0 0 1px rgba(255, 255, 255, 0.15) inset,
+      0 1px 0 rgba(255, 255, 255, 0.3) inset;
+      
+    /* 激活状态表面光泽 */
+    &::before {
+      background: linear-gradient(180deg, 
+        rgba(255, 255, 255, 0.15) 0%, 
+        transparent 50%, 
+        rgba(0, 0, 0, 0.1) 100%);
+      opacity: 1;
+    }
+  }
+
+  .column-btn.active:hover {
+    background: linear-gradient(135deg, #1a1a1a 0%, #0d0d0d 100%);
+    transform: translateY(-2px);
+    box-shadow: 
+      0 4px 8px rgba(0, 0, 0, 0.2),
+      0 8px 16px rgba(0, 0, 0, 0.15),
+      0 0 0 1px rgba(255, 255, 255, 0.2) inset,
+      0 2px 0 rgba(255, 255, 255, 0.4) inset;
+  }
+  
+  .column-btn.active:active {
+    transform: translateY(0);
+    box-shadow: 
+      0 1px 2px rgba(0, 0, 0, 0.3) inset,
+      0 2px 4px rgba(0, 0, 0, 0.2),
+      0 0 0 1px rgba(255, 255, 255, 0.1) inset;
+  }
+
   /* 相册视图样式 */
   .newsletters__gallery {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     gap: 16px;
     padding: 16px;
     background-color: #ffffff;
+    transition: grid-template-columns 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  /* 默认2列布局 - 固定2列 */
+  .newsletters__gallery.columns-2 {
+    grid-template-columns: repeat(2, 1fr);
+    max-width: 720px;
+    margin: 0 auto;
+  }
+  
+  /* 1列布局 */
+  .newsletters__gallery.columns-1 {
+    grid-template-columns: 1fr;
+    max-width: 620px;
+    margin: 0 auto;
+  }
+  
+  .newsletters__gallery.columns-1 .newsletter-card {
+    min-height: 140px;
+    display: flex;
+    flex-direction: row;
+  }
+  
+  .newsletters__gallery.columns-1 .card-link {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+  }
+  
+  .newsletters__gallery.columns-1 .card-header {
+    height: 140px;
+    width: 180px;
+    flex-shrink: 0;
+  }
+  
+  .newsletters__gallery.columns-1 .card-content {
+    flex: 1;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  
+  .newsletters__gallery.columns-1 .card-title {
+    font-size: 16px;
+    margin-bottom: 8px;
+  }
+  
+  .newsletters__gallery.columns-1 .card-summary {
+    font-size: 14px;
+    line-height: 20px;
+    -webkit-line-clamp: 3;
   }
   
   /* 渐进式加载动画 */
@@ -273,11 +481,58 @@ const totalPageNumber = Array.from({ length: page.lastPage }, (_, i) => i + 1);
     }
   }
 
+  /* 平板设备 */
+  @media (max-width: 768px) and (min-width: 641px) {
+    .newsletters__gallery.columns-2 {
+      max-width: 640px;
+    }
+  }
+  
+  /* 手机设备 */
   @media (max-width: 640px) {
-    .newsletters__gallery {
-      grid-template-columns: 1fr;
+    .newsletters__gallery,
+    .newsletters__gallery.columns-2,
+    .newsletters__gallery.columns-1 {
+      grid-template-columns: 1fr !important;
       gap: 12px;
       padding: 12px;
+      max-width: none;
+      margin: 0;
+    }
+    
+    /* 移动端恢复垂直卡片布局 */
+    .newsletters__gallery.columns-1 .newsletter-card {
+      display: block;
+      min-height: auto;
+    }
+    
+    .newsletters__gallery.columns-1 .card-link {
+      display: block;
+      width: 100%;
+    }
+    
+    .newsletters__gallery.columns-1 .card-header {
+      height: 140px;
+      width: 100%;
+    }
+    
+    .newsletters__gallery.columns-1 .card-content {
+      padding: 16px;
+    }
+    
+    .control-group {
+      flex-direction: column;
+      gap: 8px;
+      align-items: stretch;
+    }
+    
+    .column-toggle {
+      justify-content: center;
+    }
+    
+    /* 在移动设备上隐藏列数控制 */
+    .column-toggle {
+      display: none !important;
     }
   }
 
@@ -612,6 +867,7 @@ const totalPageNumber = Array.from({ length: page.lastPage }, (_, i) => i + 1);
     const listView = document.getElementById('list-view');
     const galleryView = document.getElementById('gallery-view');
     const buttons = document.querySelectorAll('.view-btn');
+    const columnControls = document.getElementById('column-controls');
     
     // 切换按钮状态
     buttons.forEach(btn => {
@@ -625,13 +881,35 @@ const totalPageNumber = Array.from({ length: page.lastPage }, (_, i) => i + 1);
     if (viewType === 'list') {
       listView.style.display = 'block';
       galleryView.style.display = 'none';
+      columnControls.style.display = 'none';
     } else {
       listView.style.display = 'none';
       galleryView.style.display = 'grid';
+      columnControls.style.display = 'flex';
     }
     
     // 保存用户偏好
     localStorage.setItem('preferredView', viewType);
+  }
+  
+  function switchColumns(columns) {
+    const galleryView = document.getElementById('gallery-view');
+    const columnButtons = document.querySelectorAll('.column-btn');
+    
+    // 切换列数按钮状态
+    columnButtons.forEach(btn => {
+      btn.classList.remove('active');
+      if (parseInt(btn.dataset.columns) === columns) {
+        btn.classList.add('active');
+      }
+    });
+    
+    // 切换网格列数
+    galleryView.className = galleryView.className.replace(/columns-\d+/g, '');
+    galleryView.classList.add(`columns-${columns}`);
+    
+    // 保存用户偏好
+    localStorage.setItem('preferredColumns', columns);
   }
   
   // 页面过渡动画
@@ -733,7 +1011,10 @@ const totalPageNumber = Array.from({ length: page.lastPage }, (_, i) => i + 1);
   // 页面加载时恢复用户偏好和初始化功能
   document.addEventListener('DOMContentLoaded', function() {
     const preferredView = localStorage.getItem('preferredView') || 'gallery';
+    const preferredColumns = parseInt(localStorage.getItem('preferredColumns')) || 2;
+    
     switchView(preferredView);
+    switchColumns(preferredColumns);
     initPageTransition();
     initImageLoading();
   });

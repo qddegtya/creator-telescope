@@ -230,8 +230,14 @@ const socialImageURL = new URL(creatorTelescopeLogo.src, Astro.site);
     width: 100%;
     display: flex;
     justify-content: center;
-    background-color: #fafafa;
     min-height: 100vh;
+    
+    /* 精致锐利斜线纹理背景 */
+    background-color: #fafafa;
+    background-image: 
+      linear-gradient(45deg, transparent 0%, transparent 89%, rgba(0, 0, 0, 0.035) 89%, rgba(0, 0, 0, 0.035) 89.5%, transparent 89.5%),
+      linear-gradient(135deg, transparent 0%, transparent 94%, rgba(0, 0, 0, 0.025) 94%, rgba(0, 0, 0, 0.025) 94.5%, transparent 94.5%);
+    background-size: 85px 85px, 125px 125px;
     
     transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
