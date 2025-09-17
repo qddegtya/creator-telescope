@@ -234,13 +234,30 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site);
     }
 
     .newsletters__item {
+      position: relative;
       list-style: none;
       width: 100%;
       box-sizing: border-box;
       padding: 16px;
       border-bottom: 1px solid rgba(0, 0, 0, 0.06);
-      background-color: #ffffff;
-      transition: background-color 0.15s ease;
+      background: linear-gradient(135deg, #ffffff 0%, #fefefe 100%);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      
+      /* 微妙的表面纹理 */
+      &::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 16px;
+        right: 16px;
+        height: 1px;
+        background: linear-gradient(90deg, 
+          transparent 0%, 
+          rgba(255, 255, 255, 0.6) 30%, 
+          rgba(255, 255, 255, 0.6) 70%, 
+          transparent 100%);
+        pointer-events: none;
+      }
 
       em {
         display: block;
@@ -270,7 +287,18 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site);
     }
 
     .newsletters__item:hover {
-      background-color: #fafafa;
+      background: linear-gradient(135deg, #fafafa 0%, #f8f8f8 100%);
+      transform: translateX(3px);
+      border-bottom-color: rgba(0, 0, 0, 0.08);
+      
+      /* 增强高光效果 */
+      &::before {
+        background: linear-gradient(90deg, 
+          transparent 0%, 
+          rgba(255, 255, 255, 0.9) 25%, 
+          rgba(255, 255, 255, 0.9) 75%, 
+          transparent 100%);
+      }
     }
 
     .newsletters__item:last-child {
@@ -368,21 +396,25 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site);
 
     .newsletters__main {
       width: 100%;
-      border: 1px solid rgba(0, 0, 0, 0.08);
+      border: 1px solid rgba(0, 0, 0, 0.06);
       background-color: #ffffff;
 
       margin-top: 6px;
       margin-bottom: 20px;
 
-      border-radius: 6px;
+      border-radius: 8px;
 
       box-sizing: border-box;
 
       overflow: hidden;
 
+      /* 升级的多层阴影系统 */
       box-shadow: 
-        0 0 0 1px rgba(0, 0, 0, 0.02),
-        0 1px 2px rgba(0, 0, 0, 0.06);
+        0 1px 3px rgba(0, 0, 0, 0.06),
+        0 4px 8px rgba(0, 0, 0, 0.04),
+        0 8px 16px rgba(0, 0, 0, 0.02),
+        0 16px 32px rgba(0, 0, 0, 0.01),
+        0 0 0 1px rgba(255, 255, 255, 0.08) inset;
     }
   }
   
@@ -391,11 +423,11 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site);
     position: fixed;
     bottom: 24px;
     right: 24px;
-    width: 48px;
-    height: 48px;
+    width: 52px;
+    height: 52px;
     
-    background-color: #ffffff;
-    border: 1px solid rgba(0, 0, 0, 0.08);
+    background: linear-gradient(135deg, #ffffff 0%, #fafafa 100%);
+    border: 1px solid rgba(0, 0, 0, 0.06);
     border-radius: 50%;
     
     display: flex;
@@ -405,11 +437,16 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site);
     color: #666666;
     cursor: pointer;
     
+    /* 精致的多层阴影 */
     box-shadow: 
-      0 2px 8px rgba(0, 0, 0, 0.1),
-      0 1px 4px rgba(0, 0, 0, 0.04);
+      0 2px 4px rgba(0, 0, 0, 0.08),
+      0 4px 8px rgba(0, 0, 0, 0.06),
+      0 8px 16px rgba(0, 0, 0, 0.04),
+      0 16px 32px rgba(0, 0, 0, 0.02),
+      0 0 0 1px rgba(255, 255, 255, 0.2) inset,
+      0 1px 0 rgba(255, 255, 255, 0.4) inset;
     
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     transform: translateY(0) scale(1);
     will-change: transform, box-shadow, border-color;
     
@@ -417,16 +454,30 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site);
   }
   
   .back-to-top:hover {
-    border-color: rgba(0, 0, 0, 0.2);
-    color: #000000;
+    border-color: rgba(0, 0, 0, 0.12);
+    color: #333333;
+    background: linear-gradient(135deg, #ffffff 0%, #f8f8f8 100%);
+    
+    /* 悬停状态的深度阴影 */
     box-shadow: 
-      0 4px 16px rgba(0, 0, 0, 0.12),
-      0 2px 8px rgba(0, 0, 0, 0.06);
-    transform: translateY(-2px) scale(1.05);
+      0 4px 8px rgba(0, 0, 0, 0.12),
+      0 8px 16px rgba(0, 0, 0, 0.08),
+      0 16px 32px rgba(0, 0, 0, 0.06),
+      0 32px 64px rgba(0, 0, 0, 0.04),
+      0 0 0 1px rgba(255, 255, 255, 0.3) inset,
+      0 2px 0 rgba(255, 255, 255, 0.6) inset;
+    
+    transform: translateY(-4px) scale(1.08);
   }
   
   .back-to-top:active {
-    transform: translateY(-1px) scale(1.02);
-    transition: all 0.1s ease;
+    transform: translateY(-2px) scale(1.04);
+    transition: all 0.15s cubic-bezier(0.4, 0, 0.6, 1);
+    
+    box-shadow: 
+      0 2px 4px rgba(0, 0, 0, 0.15),
+      0 4px 8px rgba(0, 0, 0, 0.1),
+      0 8px 16px rgba(0, 0, 0, 0.08),
+      0 0 0 1px rgba(255, 255, 255, 0.2) inset;
   }
 </style>

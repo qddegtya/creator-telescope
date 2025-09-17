@@ -132,10 +132,32 @@ const socialImageURL = new URL(creatorTelescopeLogo.src, Astro.site);
         backToTopBtn.addEventListener('click', scrollToTop);
       }
       
+      // 图片错误处理
+      function initImageErrorHandling() {
+        const images = document.querySelectorAll('.newsletterdetail__main img');
+        
+        images.forEach(img => {
+          img.addEventListener('error', function() {
+            // 创建占位符
+            const placeholder = document.createElement('div');
+            placeholder.className = 'image-placeholder';
+            
+            // 替换失效图片
+            img.parentNode.replaceChild(placeholder, img);
+          });
+          
+          // 检查图片是否已经加载失败
+          if (img.complete && img.naturalWidth === 0) {
+            img.dispatchEvent(new Event('error'));
+          }
+        });
+      }
+      
       // 页面加载完成后初始化功能
       document.addEventListener('DOMContentLoaded', function() {
         initReadingProgress();
         initBackToTop();
+        initImageErrorHandling();
       });
     </script>
   </body>
@@ -231,10 +253,15 @@ const socialImageURL = new URL(creatorTelescopeLogo.src, Astro.site);
   
   .reading-progress-bar {
     height: 100%;
-    background-color: #000000;
+    background: linear-gradient(90deg, #333333 0%, #1a1a1a 50%, #000000 100%);
     transform-origin: left center;
     transform: scaleX(0);
     transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+    
+    /* 轻微的发光效果 */
+    box-shadow: 
+      0 0 3px rgba(0, 0, 0, 0.3),
+      0 0 6px rgba(0, 0, 0, 0.2);
   }
 
   .newsletterdetail__body {
@@ -245,19 +272,42 @@ const socialImageURL = new URL(creatorTelescopeLogo.src, Astro.site);
     box-sizing: border-box;
 
     .newsletterdetail__main {
+      position: relative;
       width: 100%;
 
       overflow: hidden;
-      border-radius: 6px;
+      border-radius: 10px;
 
       box-sizing: border-box;
-      border: 1px solid rgba(0, 0, 0, 0.08);
-      padding: 40px;
-      background-color: #ffffff;
+      border: 1px solid rgba(0, 0, 0, 0.05);
+      padding: 48px;
+      background: linear-gradient(135deg, #ffffff 0%, #fefefe 100%);
 
+      /* 精致的阅读容器阴影 */
       box-shadow: 
-        0 0 0 1px rgba(0, 0, 0, 0.02),
-        0 1px 2px rgba(0, 0, 0, 0.06);
+        0 2px 4px rgba(0, 0, 0, 0.06),
+        0 4px 8px rgba(0, 0, 0, 0.04),
+        0 8px 16px rgba(0, 0, 0, 0.03),
+        0 16px 32px rgba(0, 0, 0, 0.02),
+        0 32px 64px rgba(0, 0, 0, 0.01),
+        0 0 0 1px rgba(255, 255, 255, 0.1) inset,
+        0 2px 0 rgba(255, 255, 255, 0.3) inset;
+        
+      /* 顶部高光细节 */
+      &::before {
+        content: '';
+        position: absolute;
+        top: 1px;
+        left: 12px;
+        right: 12px;
+        height: 1px;
+        background: linear-gradient(90deg, 
+          transparent 0%, 
+          rgba(255, 255, 255, 0.9) 50%, 
+          transparent 100%);
+        border-radius: 1px;
+        pointer-events: none;
+      }
 
       /* 优化排版字间距和行高 */
       line-height: 1.75;
@@ -283,6 +333,37 @@ const socialImageURL = new URL(creatorTelescopeLogo.src, Astro.site);
         width: 100%;
         border-radius: 3px;
         margin: 1.5em 0;
+        transition: opacity 0.3s ease;
+      }
+      
+      /* 图片加载失败占位符 */
+      .image-placeholder {
+        width: 100%;
+        height: 200px;
+        border-radius: 3px;
+        margin: 1.5em 0;
+        background: linear-gradient(135deg, #fafafa 0%, #f0f0f0 100%);
+        border: 1px solid rgba(0, 0, 0, 0.06);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        color: #999999;
+        font-size: 14px;
+        
+        /* 笑脸图标 */
+        &::before {
+          content: '😊';
+          font-size: 32px;
+          margin-bottom: 8px;
+          display: block;
+        }
+        
+        &::after {
+          content: '图片加载失败';
+          font-size: 12px;
+          color: #cccccc;
+        }
       }
       
       ul, ol {
