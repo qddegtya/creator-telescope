@@ -1,4 +1,25 @@
 ---
-// 使用 Astro 的重定向，避免创建历史记录条目
-return Astro.redirect('/newsletter-list/pages/1');
+// 客户端重定向，避免服务器端重定向消息
 ---
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Creator Telescope</title>
+    <script>
+        // 立即重定向，避免显示任何内容
+        window.location.replace('/newsletter-list/pages/1');
+    </script>
+    <noscript>
+        <meta http-equiv="refresh" content="0; url=/newsletter-list/pages/1">
+    </noscript>
+</head>
+<body>
+    <!-- 如果 JavaScript 被禁用，显示备用链接 -->
+    <noscript>
+        <p>正在跳转到 <a href="/newsletter-list/pages/1">周刊列表</a>...</p>
+    </noscript>
+</body>
+</html>
