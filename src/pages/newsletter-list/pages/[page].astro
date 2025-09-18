@@ -917,6 +917,19 @@ const totalPageNumber = Array.from({ length: page.lastPage }, (_, i) => i + 1);
     // 页面加载完成后移除过渡状态
     document.body.classList.remove('page-transition');
     
+    // 监听浏览器前进/后退按钮，确保页面状态正确
+    window.addEventListener('pageshow', function(event) {
+      // 页面显示时（包括从缓存中恢复），移除过渡状态
+      document.body.classList.remove('page-transition');
+    });
+    
+    // 监听页面可见性变化，确保页面在重新显示时状态正确
+    document.addEventListener('visibilitychange', function() {
+      if (!document.hidden) {
+        document.body.classList.remove('page-transition');
+      }
+    });
+    
     // 为所有内部链接添加过渡效果
     const internalLinks = document.querySelectorAll('a[href^="/"]');
     internalLinks.forEach(link => {
@@ -1008,6 +1021,14 @@ const totalPageNumber = Array.from({ length: page.lastPage }, (_, i) => i + 1);
     });
   }
   
+  // 安全网：防止页面永远停留在过渡状态
+  function ensurePageVisible() {
+    // 500ms 后强制移除过渡状态（安全网）
+    setTimeout(() => {
+      document.body.classList.remove('page-transition');
+    }, 500);
+  }
+  
   // 页面加载时恢复用户偏好和初始化功能
   document.addEventListener('DOMContentLoaded', function() {
     const preferredView = localStorage.getItem('preferredView') || 'gallery';
@@ -1017,5 +1038,6 @@ const totalPageNumber = Array.from({ length: page.lastPage }, (_, i) => i + 1);
     switchColumns(preferredColumns);
     initPageTransition();
     initImageLoading();
+    ensurePageVisible(); // 添加安全网
   });
 </script>

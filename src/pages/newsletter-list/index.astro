@@ -1,9 +1,4 @@
 ---
-const redirect = `/newsletter-list/pages/1`;
+// 使用 Astro 的重定向，避免创建历史记录条目
+return Astro.redirect('/newsletter-list/pages/1');
 ---
-
-<html>
-  <head>
-    <meta http-equiv="refresh" content={`0; url=${redirect}`} />
-  </head>
-</html>
