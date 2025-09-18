@@ -154,12 +154,31 @@ import Layout from "../layouts/Layout.astro";
     margin: 0;
     padding: 0;
 
-    /* 精致锐利斜线纹理背景 */
-    background-color: #fafafa;
+    /* Vercel 风格的精致背景系统 */
+    background-color: #fcfcfc;
     background-image: 
-      linear-gradient(45deg, transparent 0%, transparent 89%, rgba(0, 0, 0, 0.035) 89%, rgba(0, 0, 0, 0.035) 89.5%, transparent 89.5%),
-      linear-gradient(135deg, transparent 0%, transparent 94%, rgba(0, 0, 0, 0.025) 94%, rgba(0, 0, 0, 0.025) 94.5%, transparent 94.5%);
-    background-size: 90px 90px, 130px 130px;
+      /* 微妙的径向渐变 */
+      radial-gradient(600px circle at 50% 0%, rgba(0, 0, 0, 0.02) 0%, transparent 50%),
+      /* 精致的几何网格 */
+      linear-gradient(90deg, rgba(0, 0, 0, 0.015) 1px, transparent 1px),
+      linear-gradient(rgba(0, 0, 0, 0.015) 1px, transparent 1px),
+      /* 动态线条纹理 */
+      linear-gradient(45deg, transparent 0%, transparent 48%, rgba(0, 0, 0, 0.008) 49%, rgba(0, 0, 0, 0.008) 51%, transparent 52%),
+      linear-gradient(135deg, transparent 0%, transparent 48%, rgba(0, 0, 0, 0.006) 49%, rgba(0, 0, 0, 0.006) 51%, transparent 52%);
+    
+    background-size: 
+      100% 400px,
+      40px 40px,
+      40px 40px,
+      160px 160px,
+      120px 120px;
+    
+    background-position:
+      0 0,
+      0 0,
+      0 0,
+      0 0,
+      0 0;
 
     /* 更适合中文阅读的字体设置 */
     font-family: "Montserrat", "SF UI Text", "PingFang SC", "Hiragino Sans GB",
@@ -190,20 +209,35 @@ import Layout from "../layouts/Layout.astro";
 
   .newsletters__homepage {
     width: 100%;
-    height: 100%;
-    position: absolute;
-    left: 0;
-    right: 0;
-    top: 0;
-    bottom: 0;
+    min-height: 100vh;
+    position: relative;
     box-sizing: border-box;
-
+    
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
+    
+    /* 精致的层次感 */
+    padding: 5vh 2rem;
+    
+    /* 微妙的内阴影增加深度 */
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: radial-gradient(ellipse at top, rgba(0, 0, 0, 0.01) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
 
     .newsletters__meta {
+      position: relative;
+      z-index: 1;
+      
       h1,
       h3 {
         word-wrap: break-word;
@@ -242,41 +276,76 @@ import Layout from "../layouts/Layout.astro";
         img {
           width: 9.6rem;
           height: 9.6rem;
+          transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+          
+          /* 微妙的呼吸动画 */
+          animation: subtle-pulse 4s ease-in-out infinite;
         }
+        
+        &:hover img {
+          transform: scale(1.05) rotate(2deg);
+          filter: brightness(1.1);
+        }
+      }
+    }
+    
+    @keyframes subtle-pulse {
+      0%, 100% {
+        transform: scale(1);
+        opacity: 1;
+      }
+      50% {
+        transform: scale(1.02);
+        opacity: 0.95;
       }
     }
 
     .newsletters__title {
-      font-size: 3.6rem;
-      line-height: 3.6rem;
-
-      margin-bottom: 4px;
-
-      font-weight: 600;
-
-      /* 加在 subtitle 更合理，先注释 + 保留 */
-      /* overflow: hidden;
-      border-right: 1px solid #333333;
-      white-space: nowrap;
-      animation:
-        typing 4s steps(30, end) infinite,
-        blink-caret 0.75s step-end infinite; */
-    }
-
-    .text-gradient {
-      background: #959595;
+      font-size: 4.5rem;
+      line-height: 1.1;
+      margin-bottom: 1.2rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      
+      /* 更加精致的渐变效果 */
       background: linear-gradient(
-        to right,
-        #959595 0%,
-        #0d0d0d 46%,
-        #010101 50%,
-        #0a0a0a 53%,
-        #4e4e4e 76%,
-        #383838 87%,
-        #1b1b1b 100%
+        135deg,
+        #000000 0%,
+        #1a1a1a 25%,
+        #333333 50%,
+        #1a1a1a 75%,
+        #000000 100%
       );
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
+      background-clip: text;
+      
+      /* 微妙的文字阴影 */
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+      
+      /* 响应式调整 */
+      @media (max-width: 768px) {
+        font-size: 3.2rem;
+      }
+      
+      @media (max-width: 480px) {
+        font-size: 2.8rem;
+      }
+    }
+
+    .text-gradient {
+      /* 保留原有渐变作为备用 */
+      background: linear-gradient(
+        135deg,
+        #000000 0%,
+        #1a1a1a 25%,
+        #333333 50%,
+        #1a1a1a 75%,
+        #000000 100%
+      );
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
     }
   }
 
@@ -284,52 +353,100 @@ import Layout from "../layouts/Layout.astro";
     display: flex;
     flex-direction: row;
     justify-content: center;
-    margin-top: 32px;
+    margin-top: 3rem;
+    position: relative;
+    z-index: 2;
+    gap: 1rem;
 
     a {
-      display: inline-block;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
 
-      padding: 14px 24px;
-      background: linear-gradient(135deg, #ffffff 0%, #fafafa 100%);
-      border: 1px solid rgba(0, 0, 0, 0.06);
+      padding: 1rem 2rem;
+      background: rgba(255, 255, 255, 0.9);
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      backdrop-filter: blur(10px);
 
-      font-size: 14px;
-      font-weight: 500;
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
 
-      border-radius: 6px;
+      border-radius: 12px;
       text-decoration: none;
 
-      color: #000000;
+      color: #1a1a1a;
 
-      /* 精致的按钮阴影 */
+      /* 更精致的多层阴影 */
       box-shadow: 
-        0 2px 4px rgba(0, 0, 0, 0.06),
-        0 4px 8px rgba(0, 0, 0, 0.04),
-        0 8px 16px rgba(0, 0, 0, 0.02),
-        0 0 0 1px rgba(255, 255, 255, 0.15) inset,
-        0 1px 0 rgba(255, 255, 255, 0.3) inset;
+        0 1px 2px rgba(0, 0, 0, 0.04),
+        0 2px 4px rgba(0, 0, 0, 0.03),
+        0 4px 8px rgba(0, 0, 0, 0.02),
+        0 8px 16px rgba(0, 0, 0, 0.01),
+        0 0 0 1px rgba(255, 255, 255, 0.2) inset,
+        0 1px 0 rgba(255, 255, 255, 0.4) inset;
 
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
       transform: translateY(0) scale(1);
-      will-change: transform, box-shadow, border-color;
-
-      margin: 0 8px;
+      will-change: transform, box-shadow, border-color, background-color;
+      
+      /* 微妙的光线效果 */
+      &::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.3) 0%, transparent 50%);
+        border-radius: inherit;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+        pointer-events: none;
+      }
+      
+      /* 悬停时的发光边框效果 */
+      &::after {
+        content: '';
+        position: absolute;
+        top: -1px;
+        left: -1px;
+        right: -1px;
+        bottom: -1px;
+        background: linear-gradient(45deg, rgba(0, 0, 0, 0.1), transparent, rgba(0, 0, 0, 0.1));
+        border-radius: inherit;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+        pointer-events: none;
+        z-index: -1;
+      }
     }
 
     a:hover {
-      border-color: rgba(0, 0, 0, 0.12);
-      background: linear-gradient(135deg, #ffffff 0%, #f8f8f8 100%);
+      border-color: rgba(0, 0, 0, 0.15);
+      background: rgba(255, 255, 255, 0.98);
+      color: #000000;
       
       /* 悬停状态深度阴影 */
       box-shadow: 
-        0 4px 8px rgba(0, 0, 0, 0.1),
-        0 8px 16px rgba(0, 0, 0, 0.06),
-        0 16px 32px rgba(0, 0, 0, 0.04),
-        0 32px 64px rgba(0, 0, 0, 0.02),
-        0 0 0 1px rgba(255, 255, 255, 0.2) inset,
-        0 2px 0 rgba(255, 255, 255, 0.4) inset;
+        0 2px 4px rgba(0, 0, 0, 0.06),
+        0 4px 8px rgba(0, 0, 0, 0.04),
+        0 8px 16px rgba(0, 0, 0, 0.03),
+        0 16px 32px rgba(0, 0, 0, 0.02),
+        0 32px 64px rgba(0, 0, 0, 0.01),
+        0 0 0 1px rgba(255, 255, 255, 0.3) inset,
+        0 2px 0 rgba(255, 255, 255, 0.5) inset;
       
-      transform: translateY(-3px) scale(1.03);
+      transform: translateY(-2px) scale(1.02);
+      
+      &::before {
+        opacity: 1;
+      }
+      
+      &::after {
+        opacity: 1;
+      }
     }
 
     a:active {
@@ -337,10 +454,10 @@ import Layout from "../layouts/Layout.astro";
       transition: all 0.15s cubic-bezier(0.4, 0, 0.6, 1);
       
       box-shadow: 
-        0 2px 4px rgba(0, 0, 0, 0.12),
-        0 4px 8px rgba(0, 0, 0, 0.08),
-        0 8px 16px rgba(0, 0, 0, 0.06),
-        0 0 0 1px rgba(255, 255, 255, 0.1) inset;
+        0 1px 2px rgba(0, 0, 0, 0.08),
+        0 2px 4px rgba(0, 0, 0, 0.06),
+        0 4px 8px rgba(0, 0, 0, 0.04),
+        0 0 0 1px rgba(255, 255, 255, 0.15) inset;
     }
   }
 </style>

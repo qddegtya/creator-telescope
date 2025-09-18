@@ -100,6 +100,14 @@ const socialImageURL = new URL(creatorTelescopeLogo.src, Astro.site);
           const progress = Math.min(Math.max(scrollTop / totalScroll, 0), 1);
           
           progressBar.style.transform = `scaleX(${progress})`;
+          
+          // 触发完成动画
+          if (progress >= 0.98 && !progressBar.classList.contains('completed')) {
+            progressBar.classList.add('completed');
+            setTimeout(() => {
+              progressBar.classList.remove('completed');
+            }, 600);
+          }
         }
         
         window.addEventListener('scroll', updateProgress, { passive: true });
@@ -232,12 +240,31 @@ const socialImageURL = new URL(creatorTelescopeLogo.src, Astro.site);
     justify-content: center;
     min-height: 100vh;
     
-    /* 精致锐利斜线纹理背景 */
-    background-color: #fafafa;
+    /* Vercel 风格的精致背景系统 */
+    background-color: #fcfcfc;
     background-image: 
-      linear-gradient(45deg, transparent 0%, transparent 89%, rgba(0, 0, 0, 0.035) 89%, rgba(0, 0, 0, 0.035) 89.5%, transparent 89.5%),
-      linear-gradient(135deg, transparent 0%, transparent 94%, rgba(0, 0, 0, 0.025) 94%, rgba(0, 0, 0, 0.025) 94.5%, transparent 94.5%);
-    background-size: 85px 85px, 125px 125px;
+      /* 微妙的径向渐变 */
+      radial-gradient(600px circle at 50% 0%, rgba(0, 0, 0, 0.02) 0%, transparent 50%),
+      /* 精致的几何网格 */
+      linear-gradient(90deg, rgba(0, 0, 0, 0.015) 1px, transparent 1px),
+      linear-gradient(rgba(0, 0, 0, 0.015) 1px, transparent 1px),
+      /* 动态线条纹理 */
+      linear-gradient(45deg, transparent 0%, transparent 48%, rgba(0, 0, 0, 0.008) 49%, rgba(0, 0, 0, 0.008) 51%, transparent 52%),
+      linear-gradient(135deg, transparent 0%, transparent 48%, rgba(0, 0, 0, 0.006) 49%, rgba(0, 0, 0, 0.006) 51%, transparent 52%);
+    
+    background-size: 
+      100% 400px,
+      40px 40px,
+      40px 40px,
+      160px 160px,
+      120px 120px;
+    
+    background-position:
+      0 0,
+      0 0,
+      0 0,
+      0 0,
+      0 0;
     
     transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
@@ -262,12 +289,39 @@ const socialImageURL = new URL(creatorTelescopeLogo.src, Astro.site);
     background: linear-gradient(90deg, #333333 0%, #1a1a1a 50%, #000000 100%);
     transform-origin: left center;
     transform: scaleX(0);
-    transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: transform 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
     
-    /* 轻微的发光效果 */
+    /* 增强的发光效果 */
     box-shadow: 
-      0 0 3px rgba(0, 0, 0, 0.3),
-      0 0 6px rgba(0, 0, 0, 0.2);
+      0 0 4px rgba(0, 0, 0, 0.4),
+      0 0 8px rgba(0, 0, 0, 0.2),
+      0 0 12px rgba(0, 0, 0, 0.1);
+    
+    /* 进度条完成时的微妙脉冲 */
+    &.completed {
+      animation: progress-complete 0.6s ease-out;
+    }
+  }
+  
+  @keyframes progress-complete {
+    0% {
+      box-shadow: 
+        0 0 4px rgba(0, 0, 0, 0.4),
+        0 0 8px rgba(0, 0, 0, 0.2),
+        0 0 12px rgba(0, 0, 0, 0.1);
+    }
+    50% {
+      box-shadow: 
+        0 0 8px rgba(0, 0, 0, 0.6),
+        0 0 16px rgba(0, 0, 0, 0.3),
+        0 0 24px rgba(0, 0, 0, 0.15);
+    }
+    100% {
+      box-shadow: 
+        0 0 4px rgba(0, 0, 0, 0.4),
+        0 0 8px rgba(0, 0, 0, 0.2),
+        0 0 12px rgba(0, 0, 0, 0.1);
+    }
   }
 
   .newsletterdetail__body {
@@ -290,32 +344,51 @@ const socialImageURL = new URL(creatorTelescopeLogo.src, Astro.site);
       width: 100%;
 
       overflow: hidden;
-      border-radius: 10px;
+      border-radius: 12px;
 
       box-sizing: border-box;
-      border: 1px solid rgba(0, 0, 0, 0.05);
-      padding: 32px;
-      background: linear-gradient(135deg, #ffffff 0%, #fefefe 100%);
+      border: 1px solid rgba(0, 0, 0, 0.06);
+      padding: 40px;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(12px);
 
-      /* 精致的阅读容器阴影 */
+      /* 升级的多层阴影系统 */
       box-shadow: 
-        0 2px 4px rgba(0, 0, 0, 0.06),
+        0 1px 3px rgba(0, 0, 0, 0.06),
         0 4px 8px rgba(0, 0, 0, 0.04),
-        0 8px 16px rgba(0, 0, 0, 0.03),
-        0 16px 32px rgba(0, 0, 0, 0.02),
-        0 32px 64px rgba(0, 0, 0, 0.01),
-        0 0 0 1px rgba(255, 255, 255, 0.1) inset,
-        0 2px 0 rgba(255, 255, 255, 0.3) inset;
+        0 8px 16px rgba(0, 0, 0, 0.02),
+        0 16px 32px rgba(0, 0, 0, 0.01),
+        0 0 0 1px rgba(255, 255, 255, 0.08) inset;
 
       /* 优化排版字间距和行高 */
-      line-height: 1.75;
-      letter-spacing: 0.02em;
+      line-height: 1.8;
+      letter-spacing: 0.015em;
+      color: #1a1a1a;
+      font-size: 16px;
 
       h1, h2, h3, h4, h5, h6 {
-        line-height: 1.4;
-        letter-spacing: 0.01em;
+        line-height: 1.3;
+        letter-spacing: -0.02em;
+        margin-top: 2.4em;
+        margin-bottom: 1em;
+        font-weight: 600;
+        color: #000000;
+      }
+      
+      h1 {
+        font-size: 2.2em;
+        font-weight: 700;
+        margin-bottom: 1.2em;
+      }
+      
+      h2 {
+        font-size: 1.8em;
         margin-top: 2em;
-        margin-bottom: 0.8em;
+      }
+      
+      h3 {
+        font-size: 1.4em;
+        margin-top: 1.8em;
       }
       
       h1:first-child, h2:first-child, h3:first-child {
@@ -323,8 +396,9 @@ const socialImageURL = new URL(creatorTelescopeLogo.src, Astro.site);
       }
 
       p {
-        margin-bottom: 1.4em;
+        margin-bottom: 1.6em;
         word-spacing: 0.05em;
+        font-weight: 400;
       }
 
       img {
@@ -400,11 +474,11 @@ const socialImageURL = new URL(creatorTelescopeLogo.src, Astro.site);
     position: fixed;
     bottom: 24px;
     right: 24px;
-    width: 48px;
-    height: 48px;
+    width: 52px;
+    height: 52px;
     
-    background-color: #ffffff;
-    border: 1px solid rgba(0, 0, 0, 0.08);
+    background: linear-gradient(135deg, #ffffff 0%, #fafafa 100%);
+    border: 1px solid rgba(0, 0, 0, 0.06);
     border-radius: 50%;
     
     display: flex;
@@ -414,11 +488,16 @@ const socialImageURL = new URL(creatorTelescopeLogo.src, Astro.site);
     color: #666666;
     cursor: pointer;
     
+    /* 精致的多层阴影 */
     box-shadow: 
-      0 2px 8px rgba(0, 0, 0, 0.1),
-      0 1px 4px rgba(0, 0, 0, 0.04);
+      0 2px 4px rgba(0, 0, 0, 0.08),
+      0 4px 8px rgba(0, 0, 0, 0.06),
+      0 8px 16px rgba(0, 0, 0, 0.04),
+      0 16px 32px rgba(0, 0, 0, 0.02),
+      0 0 0 1px rgba(255, 255, 255, 0.2) inset,
+      0 1px 0 rgba(255, 255, 255, 0.4) inset;
     
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     transform: translateY(0) scale(1);
     will-change: transform, box-shadow, border-color;
     
@@ -426,16 +505,30 @@ const socialImageURL = new URL(creatorTelescopeLogo.src, Astro.site);
   }
   
   .back-to-top:hover {
-    border-color: rgba(0, 0, 0, 0.2);
-    color: #000000;
+    border-color: rgba(0, 0, 0, 0.12);
+    color: #333333;
+    background: linear-gradient(135deg, #ffffff 0%, #f8f8f8 100%);
+    
+    /* 悬停状态的深度阴影 */
     box-shadow: 
-      0 4px 16px rgba(0, 0, 0, 0.12),
-      0 2px 8px rgba(0, 0, 0, 0.06);
-    transform: translateY(-2px) scale(1.05);
+      0 4px 8px rgba(0, 0, 0, 0.12),
+      0 8px 16px rgba(0, 0, 0, 0.08),
+      0 16px 32px rgba(0, 0, 0, 0.06),
+      0 32px 64px rgba(0, 0, 0, 0.04),
+      0 0 0 1px rgba(255, 255, 255, 0.3) inset,
+      0 2px 0 rgba(255, 255, 255, 0.6) inset;
+    
+    transform: translateY(-4px) scale(1.08);
   }
   
   .back-to-top:active {
-    transform: translateY(-1px) scale(1.02);
-    transition: all 0.1s ease;
+    transform: translateY(-2px) scale(1.04);
+    transition: all 0.15s cubic-bezier(0.4, 0, 0.6, 1);
+    
+    box-shadow: 
+      0 2px 4px rgba(0, 0, 0, 0.15),
+      0 4px 8px rgba(0, 0, 0, 0.1),
+      0 8px 16px rgba(0, 0, 0, 0.08),
+      0 0 0 1px rgba(255, 255, 255, 0.2) inset;
   }
 </style>
