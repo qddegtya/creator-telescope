@@ -4,7 +4,7 @@ import { Component } from '@astack-tech/core';
  * 周刊生成网关组件
  * 
  * 作为流水线的统一入口和出口，控制整个流程的时序
- * 类似于 deep-research 例子中的 Gateway 组件
+ * 
  */
 export class WeeklyControllerComponent extends Component {
   constructor() {
