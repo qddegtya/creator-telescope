@@ -118,7 +118,7 @@
     "config": {
       "maxTweetsPerAccount": 50,
       "dayRange": 14,
-      "headless": false,
+      "headless": true,
       "delayBetweenRequests": 500
     }
   },
