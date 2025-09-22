@@ -1,0 +1,82 @@
+{
+  "focus": [
+    "agent",
+    "autonomous ai",
+    "llm framework", 
+    "ai automation",
+    "intelligent agents",
+    "agentic ai"
+  ],
+  "timeWindow": "24h",
+  "sources": {
+    "google": {
+      "enabled": true,
+      "priority": 1,
+      "searchQueries": [
+        "AI agent framework new 2024",
+        "autonomous agent library GitHub",
+        "LangChain agent tutorial",
+        "CrewAI multi-agent framework",
+        "AutoGen agent framework Microsoft",
+        "intelligent agent architecture"
+      ],
+      "siteFilters": [
+        "site:github.com",
+        "site:reddit.com/r/MachineLearning",
+        "site:medium.com",
+        "site:towardsdatascience.com",
+        "site:paperswithcode.com"
+      ]
+    },
+    "twitter": {
+      "enabled": true,
+      "priority": 1,
+      "hashtags": [
+        "#AI",
+        "#agent",
+        "#LLM", 
+        "#automation",
+        "#MachineLearning",
+        "#AgenticAI",
+        "#AutonomousAgent"
+      ],
+      "searchQueries": [
+        "AI agent framework",
+        "autonomous agent",
+        "LLM agent",
+        "agent orchestration",
+        "multi-agent system"
+      ]
+    },
+    "github": {
+      "enabled": true,
+      "priority": 1,
+      "searchQueries": [
+        "agent framework",
+        "autonomous agent",
+        "llm agent",
+        "ai automation",
+        "multi-agent",
+        "agent orchestration"
+      ],
+      "filters": {
+        "language": ["TypeScript", "Python", "JavaScript"],
+        "minStars": 50,
+        "pushedAfter": "2024-09-21"
+      }
+    }
+  },
+  "quality": {
+    "minCredibilityScore": 0.7,
+    "minRelevanceScore": 0.8,
+    "maxAge": "24h",
+    "requiredKeywords": ["agent", "ai", "framework", "autonomous"],
+    "excludeKeywords": ["spam", "advertisement", "promotion"]
+  },
+  "performance": {
+    "maxConcurrentSearches": 5,
+    "requestDelay": 1000,
+    "retryAttempts": 3,
+    "timeout": 30000
+  }
+}
