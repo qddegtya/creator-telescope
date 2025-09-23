@@ -20,7 +20,7 @@ export class TwitterSearchAgent extends Component {
   private loginState = {
     isLoggedIn: false,
     loginAttempts: 0,
-    maxLoginAttempts: 3,
+    maxLoginAttempts: 5, // 增加重试次数
     lastLoginTime: 0,
     sessionDuration: 30 * 60 * 1000 // 30分钟会话有效期
   };
@@ -96,6 +96,12 @@ export class TwitterSearchAgent extends Component {
             try {
               console.log(`🔗 尝试访问: ${searchUrl.includes('x.com') ? 'X.com' : 'Twitter.com'}`);
               
+              // 检查页面是否仍然有效
+              if (page.isClosed()) {
+                console.warn('⚠️ 页面已关闭，跳过此URL');
+                continue;
+              }
+              
               await page.goto(searchUrl, { 
                 waitUntil: 'domcontentloaded',
                 timeout: 30000 
@@ -103,6 +109,13 @@ export class TwitterSearchAgent extends Component {
 
               // 检查是否成功加载
               await page.waitForTimeout(3000);
+              
+              // 再次检查页面状态
+              if (page.isClosed()) {
+                console.warn('⚠️ 页面在导航过程中被关闭，跳过此URL');
+                continue;
+              }
+              
               const currentUrl = page.url();
               
               if (currentUrl.includes('login') || currentUrl.includes('i/flow')) {
@@ -111,11 +124,23 @@ export class TwitterSearchAgent extends Component {
                 
                 if (!loginSuccess) {
                   console.warn('⚠️ 登录失败，尝试下一个URL');
+                  // 检查页面是否在登录过程中被破坏
+                  if (page.isClosed()) {
+                    console.warn('⚠️ 页面在登录过程中被关闭');
+                    break; // 退出URL循环，需要重新获取页面
+                  }
                   continue;
                 }
                 
                 // 登录成功后重新尝试搜索URL
                 console.log('✅ 登录成功，重新访问搜索页面...');
+                
+                // 验证页面仍然有效
+                if (page.isClosed()) {
+                  console.warn('⚠️ 页面在登录后被关闭');
+                  break; // 退出URL循环
+                }
+                
                 await page.goto(searchUrl, { 
                   waitUntil: 'domcontentloaded',
                   timeout: 30000 

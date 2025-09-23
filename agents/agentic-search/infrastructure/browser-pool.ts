@@ -337,11 +337,21 @@ export class BrowserPool extends Component {
    * 租借页面
    */
   async leasePage(timeout?: number): Promise<PageLease> {
+    if (this.isDestroyed || this.isDestroying) {
+      throw new Error('浏览器池已销毁或正在销毁，无法租借页面');
+    }
+
     console.log('📄 租借新页面...');
 
     try {
       // 获取可用实例
       const instance = await this.getAvailableInstance();
+      
+      // 再次检查是否已被销毁
+      if (this.isDestroyed || this.isDestroying) {
+        throw new Error('浏览器池在租借过程中被销毁');
+      }
+      
       instance.status = 'busy';
       instance.lastUsed = new Date();
       instance.usageCount++;
@@ -485,19 +495,34 @@ export class BrowserPool extends Component {
       instance.status = 'closed';
       
       // 关闭所有该实例的租借页面
-      for (const [leaseId, lease] of this.leases) {
-        if (lease.browserInstance.id === instanceId) {
+      const relatedLeases = Array.from(this.leases.entries())
+        .filter(([_, lease]) => lease.browserInstance.id === instanceId)
+        .map(([leaseId]) => leaseId);
+      
+      for (const leaseId of relatedLeases) {
+        try {
           await this.returnPage(leaseId);
+        } catch (error) {
+          console.error(`❌ 关闭租借 ${leaseId} 失败:`, error);
         }
       }
 
-      // 关闭浏览器
-      await instance.browser.close();
-      this.instances.delete(instanceId);
+      // 关闭浏览器上下文
+      if (instance.context && !instance.context.closed) {
+        await instance.context.close();
+      }
       
+      // 关闭浏览器
+      if (instance.browser && instance.browser.isConnected()) {
+        await instance.browser.close();
+      }
+      
+      this.instances.delete(instanceId);
       console.log(`🗑️ 浏览器实例已关闭: ${instanceId}`);
     } catch (error) {
       console.error(`❌ 关闭浏览器实例失败: ${instanceId}`, error);
+      // 即使关闭失败，也要从集合中移除
+      this.instances.delete(instanceId);
     }
   }
 
@@ -597,23 +622,60 @@ export class BrowserPool extends Component {
   /**
    * 销毁浏览器池
    */
-  async destroy(): Promise<void> {
-    console.log('💥 销毁浏览器池...');
+  private isDestroyed = false;
+  private isDestroying = false;
 
-    // 停止清理定时器
-    if (this.cleanupInterval) {
-      clearInterval(this.cleanupInterval);
-      this.cleanupInterval = null;
+  async destroy(): Promise<void> {
+    if (this.isDestroyed) {
+      console.log('⚠️ 浏览器池已经销毁，跳过重复销毁');
+      return;
     }
 
-    // 关闭所有实例
-    const closePromises = Array.from(this.instances.keys()).map(id => 
-      this.closeInstance(id)
-    );
+    if (this.isDestroying) {
+      console.log('⚠️ 浏览器池正在销毁中，等待完成...');
+      // 等待正在进行的销毁操作完成
+      while (this.isDestroying && !this.isDestroyed) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+      return;
+    }
 
-    await Promise.all(closePromises);
-    
-    console.log('✅ 浏览器池已销毁');
+    console.log('💥 销毁浏览器池...');
+    this.isDestroying = true;
+
+    try {
+      // 停止清理定时器
+      if (this.cleanupInterval) {
+        clearInterval(this.cleanupInterval);
+        this.cleanupInterval = null;
+      }
+
+      // 先关闭所有租借
+      console.log(`🔄 关闭 ${this.leases.size} 个活跃租借...`);
+      const leaseIds = Array.from(this.leases.keys());
+      await Promise.all(leaseIds.map(id => this.returnPage(id)));
+
+      // 再关闭所有实例
+      console.log(`🔄 关闭 ${this.instances.size} 个浏览器实例...`);
+      const closePromises = Array.from(this.instances.keys()).map(id => 
+        this.closeInstance(id).catch(error => {
+          console.error(`❌ 关闭实例 ${id} 失败:`, error);
+        })
+      );
+
+      await Promise.all(closePromises);
+      
+      // 清空数据结构
+      this.instances.clear();
+      this.leases.clear();
+      
+      console.log('✅ 浏览器池已销毁');
+    } catch (error) {
+      console.error('❌ 浏览器池销毁过程中出错:', error);
+    } finally {
+      this.isDestroyed = true;
+      this.isDestroying = false;
+    }
   }
 }
 

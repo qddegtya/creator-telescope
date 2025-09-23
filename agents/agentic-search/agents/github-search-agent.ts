@@ -22,6 +22,9 @@ export class GitHubSearchAgent extends Component {
 
   private octokit: Octokit;
   private environment: any;
+  private rateLimitRemaining: number = 30; // GitHub搜索API限制
+  private lastRateLimitReset: number = 0;
+  private isApiRateLimited: boolean = false;
 
   constructor() {
     super();
@@ -167,12 +170,20 @@ export class GitHubSearchAgent extends Component {
         
         console.log(`🔍 仓库搜索查询: ${query}`);
 
-        // 执行搜索
-        const response = await this.octokit.rest.search.repos({
-          q: query,
-          sort: 'updated',
-          order: 'desc',
-          per_page: Math.min(task.maxResults, 100)
+        // 检查限流状态
+        if (this.isApiRateLimited) {
+          console.warn('⚠️ GitHub API 限流中，跳过仓库搜索');
+          break;
+        }
+
+        // 执行搜索，带限流处理
+        const response = await this.executeWithRateLimit(async () => {
+          return await this.octokit.rest.search.repos({
+            q: query,
+            sort: 'updated',
+            order: 'desc',
+            per_page: Math.min(task.maxResults, 100)
+          });
         });
 
         console.log(`📦 找到 ${response.data.items.length} 个仓库`);
@@ -244,12 +255,20 @@ export class GitHubSearchAgent extends Component {
         
         console.log(`💻 代码搜索查询: ${query}`);
 
-        // 执行搜索
-        const response = await this.octokit.rest.search.code({
-          q: query,
-          sort: 'indexed',
-          order: 'desc',
-          per_page: Math.min(Math.floor(task.maxResults / 2), 50) // 代码搜索限制更严
+        // 检查限流状态
+        if (this.isApiRateLimited) {
+          console.warn('⚠️ GitHub API 限流中，跳过代码搜索');
+          break;
+        }
+
+        // 执行搜索，带限流处理
+        const response = await this.executeWithRateLimit(async () => {
+          return await this.octokit.rest.search.code({
+            q: query,
+            sort: 'indexed',
+            order: 'desc',
+            per_page: Math.min(Math.floor(task.maxResults / 2), 50) // 代码搜索限制更严
+          });
         });
 
         console.log(`💻 找到 ${response.data.items.length} 个代码片段`);
@@ -593,7 +612,9 @@ export class GitHubSearchAgent extends Component {
   private async respectApiLimits(): Promise<void> {
     // GitHub 搜索 API 有更严格的限制（每分钟 30 次）
     // 添加延迟以避免触发限制
-    await new Promise(resolve => setTimeout(resolve, 2000)); // 2 秒延迟
+    const delay = Math.random() * 2000 + 3000; // 3-5秒随机延迟
+    console.log(`⏳ API限制保护，等待 ${delay.toFixed(0)}ms...`);
+    await new Promise(resolve => setTimeout(resolve, delay));
   }
 
   /**
@@ -671,6 +692,72 @@ export class GitHubSearchAgent extends Component {
         $o('out').send(errorResult);
       }
     });
+  }
+
+  /**
+   * 执行API调用并处理限流
+   */
+  private async executeWithRateLimit<T>(apiCall: () => Promise<T>): Promise<T> {
+    // 检查是否已经被限流
+    if (this.isApiRateLimited) {
+      const waitTime = this.lastRateLimitReset - Date.now();
+      if (waitTime > 0 && waitTime < 3600000) {
+        console.log(`⏳ API已被限流，等待 ${Math.ceil(waitTime / 60000)} 分钟后重试`);
+        throw new Error(`GitHub API 限流中，请等待 ${Math.ceil(waitTime / 60000)} 分钟`);
+      } else {
+        // 重置时间已过，清除限流状态
+        this.isApiRateLimited = false;
+      }
+    }
+
+    try {
+      const result = await apiCall();
+      
+      // 更新限流状态（从响应头获取）
+      this.isApiRateLimited = false;
+      
+      return result;
+    } catch (error: any) {
+      // 检查是否为限流错误
+      if (error.status === 403 && (error.message?.includes('rate limit') || error.message?.includes('API rate limit'))) {
+        console.error('❌ GitHub API 限流:', error.message);
+        this.isApiRateLimited = true;
+        
+        // 从错误响应头获取重置时间
+        const resetTime = error.response?.headers?.['x-ratelimit-reset'];
+        if (resetTime) {
+          this.lastRateLimitReset = parseInt(resetTime) * 1000; // 转换为毫秒
+          const waitTime = this.lastRateLimitReset - Date.now();
+          if (waitTime > 0 && waitTime < 3600000) { // 最多等待1小时
+            console.log(`⏳ 等待限流重置，剩余时间: ${Math.ceil(waitTime / 60000)} 分钟`);
+          }
+        } else {
+          // 如果没有重置时间，设置默认等待时间（1小时）
+          this.lastRateLimitReset = Date.now() + 3600000;
+        }
+        
+        throw new Error(`GitHub API 限流: ${error.message}`);
+      }
+      
+      // 检查是否为其他API错误
+      if (error.status >= 400) {
+        console.error(`❌ GitHub API 错误 ${error.status}:`, error.message);
+        throw new Error(`GitHub API 错误 ${error.status}: ${error.message}`);
+      }
+      
+      // 其他错误直接抛出
+      throw error;
+    }
+  }
+
+  /**
+   * 重置Agent状态（用于测试间隔离）
+   */
+  resetState(): void {
+    this.isApiRateLimited = false;
+    this.rateLimitRemaining = 30;
+    this.lastRateLimitReset = 0;
+    console.log('🔄 GitHub Agent 状态已重置');
   }
 }
 

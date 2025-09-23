@@ -586,11 +586,19 @@ export class WorkerPool extends Component {
     });
   }
 
+  private isDestroyed = false;
+
   /**
    * 销毁 Worker 池
    */
   async destroy(): Promise<void> {
+    if (this.isDestroyed) {
+      console.log('⚠️ Worker池已经销毁，跳过重复销毁');
+      return;
+    }
+
     console.log('💥 销毁 Worker 池...');
+    this.isDestroyed = true;
 
     // 等待所有活动任务完成或超时
     const maxWaitTime = 30000; // 30 秒

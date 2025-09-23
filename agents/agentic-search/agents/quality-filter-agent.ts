@@ -456,6 +456,8 @@ export class QualityFilterAgent extends Agent {
         new ContentQualityTool(),
         new ContentRankingTool()
       ],
+      maxIterations: 3, // 明确限制最大迭代次数
+      iterationTimeout: 30000, // 单次迭代超时30秒
       systemPrompt: `你是一个专业的内容质量评估专家，具备严格的质量标准和客观的评判能力。
 
 ## 🎯 专业使命
@@ -551,8 +553,13 @@ export class QualityFilterAgent extends Agent {
 - 提供清晰的质量改进建议`;
 
     try {
-      // 使用 Agent 的智能分析能力
-      const agentOutput = await super.run(userMessage);
+      // 使用 Agent 的智能分析能力，设置明确的超时和迭代限制
+      const agentOutput = await Promise.race([
+        super.run(userMessage),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('质量过滤Agent执行超时')), 30000)
+        )
+      ]) as any;
       
       console.log('🧠 Agent 分析完成:', agentOutput.message);
       console.log('🔧 工具调用次数:', agentOutput.toolCalls?.length || 0);

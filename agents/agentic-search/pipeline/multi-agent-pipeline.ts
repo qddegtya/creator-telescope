@@ -127,13 +127,7 @@ export class MultiAgentSearchPipeline extends Pipeline {
    * 配置管道连接和数据流
    */
   private configurePipeline(): void {
-    // 添加所有 Agent 组件到管道
-    this.addComponent('coordinator', this.coordinatorAgent);
-    this.addComponent('google_search', this.googleSearchAgent);
-    this.addComponent('twitter_search', this.twitterSearchAgent);
-    this.addComponent('github_search', this.githubSearchAgent);
-    this.addComponent('quality_filter', this.qualityFilterAgent);
-    this.addComponent('newsletter_generator', this.newsletterGeneratorAgent);
+    // Agent组件已在initializeAgents()中添加，此处只配置连接
 
     // 添加数据聚合组件
     const searchAggregator = this.createSearchAggregator();
@@ -364,6 +358,7 @@ export class MultiAgentSearchPipeline extends Pipeline {
         const finalOutput: AgenticSearchOutput = {
           success: true,
           newsletter: newsletter.newsletter,
+          contents: filteredData?.filteredContents || [], // 添加过滤后的内容数组
           searchResults: this.executionStats.searchResults,
           qualityAnalysis: filteredData?.qualityAnalysis || {},
           analytics: this.generateAnalytics(),
@@ -635,6 +630,7 @@ export class MultiAgentSearchPipeline extends Pipeline {
           sections: [], 
           generatedAt: new Date() 
         }, // 提供默认newsletter
+        contents: analysis.analysisData?.contents || [], // 添加缺失的contents字段
         searchResults: this.executionStats.searchResults,
         qualityAnalysis: analysis.analysisData?.qualityAnalysis || {},
         analytics: this.generateAnalytics(),
@@ -697,11 +693,62 @@ export class MultiAgentSearchPipeline extends Pipeline {
   }
 
   /**
+   * 重置所有Agent状态
+   * 避免测试用例之间的状态污染和并发执行混乱
+   */
+  private resetAgentStates(): void {
+    console.log('🔄 重置Agent状态以避免测试间污染...');
+
+    // 重置执行统计
+    this.executionStats = {
+      startTime: new Date(),
+      endTime: new Date(),
+      totalDuration: 0,
+      searchResults: {},
+      errors: []
+    };
+
+    // 重置所有Agent的内部状态
+    // 注意：Agent本身是无状态的，但某些Agent可能缓存了前一次执行的数据
+    // 通过重新创建关键状态来确保隔离
+    
+    // 重置Twitter Agent的登录状态，避免重试次数积累
+    if (this.twitterSearchAgent && (this.twitterSearchAgent as any).loginState) {
+      (this.twitterSearchAgent as any).loginState.loginAttempts = 0;
+      (this.twitterSearchAgent as any).loginState.isLoggedIn = false;
+      console.log('🔄 Twitter Agent登录状态已重置');
+    }
+
+    // 重置GitHub Agent的状态，清理API调用缓存
+    if (this.githubSearchAgent && typeof (this.githubSearchAgent as any).resetState === 'function') {
+      (this.githubSearchAgent as any).resetState();
+      console.log('🔄 GitHub Agent状态已重置');
+    }
+
+    // 重置其他Agent状态
+    if (this.googleSearchAgent && typeof (this.googleSearchAgent as any).resetState === 'function') {
+      (this.googleSearchAgent as any).resetState();
+      console.log('🔄 Google Agent状态已重置');
+    }
+
+    // 强制垃圾回收，避免内存泄漏
+    if (global.gc) {
+      global.gc();
+      console.log('🧹 已强制执行垃圾回收');
+    }
+
+    console.log('✅ Agent状态重置完成');
+  }
+
+  /**
    * 主要执行方法
    */
   async execute(input: AgenticSearchInput): Promise<AgenticSearchOutput> {
     console.log('🚀 启动 Multi-Agent Search Pipeline');
     console.log('📝 搜索关键字:', input.keywords.join(', '));
+
+    // 重置所有Agent状态，避免测试用例间的状态污染
+    this.resetAgentStates();
 
     this.executionStats.startTime = new Date();
 
@@ -734,6 +781,8 @@ export class MultiAgentSearchPipeline extends Pipeline {
       return {
         success: false,
         error: error instanceof Error ? error.message : String(error),
+        contents: [], // 错误情况下返回空数组
+        newsletter: { title: '', content: '', sections: [] }, // 添加默认newsletter结构
         searchResults: this.executionStats.searchResults,
         analytics: this.generateAnalytics(),
         metadata: {

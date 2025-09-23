@@ -105,7 +105,7 @@ class TaskDistributionTool implements Tool {
         priority: searchTargets.indexOf('twitter') + 1,
         keywords: expandedKeywords,
         maxResults: maxResults.twitter,
-        timeoutMs: 45000,
+        timeoutMs: 120000, // 增加到2分钟，支持登录验证
         hashtags: this.extractHashtags(expandedKeywords),
         influencers: [],
         engagement: { minLikes: 5, minRetweets: 2 },
@@ -188,6 +188,8 @@ export class CoordinatorAgent extends Agent {
         new StrategyAnalysisTool(),
         new TaskDistributionTool()
       ],
+      maxIterations: 5, // 明确限制最大迭代次数
+      iterationTimeout: 30000, // 单次迭代超时30秒
       systemPrompt: `你是一个专业的 AI 搜索策略协调专家，具备深度思考和决策能力。
 
 ## 🎯 核心任务
@@ -439,7 +441,7 @@ export class CoordinatorAgent extends Agent {
         priority: 2,
         keywords: strategy.expandedKeywords,
         maxResults: 20,
-        timeoutMs: 45000,
+        timeoutMs: 120000, // 增加到2分钟，支持登录验证
         hashtags: ['ai', 'tech'],
         influencers: [],
         engagement: { minLikes: 5, minRetweets: 2 },

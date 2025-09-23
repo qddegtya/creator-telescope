@@ -785,8 +785,13 @@ ${input.filteredContents.length > 10 ? `... 另外还有 ${input.filteredContent
 请生成一份专业、易读、有价值的 AI 技术新闻简报。`;
 
     try {
-      // 使用 Agent 的智能分析和生成能力
-      const agentOutput = await super.run(userMessage);
+      // 使用 Agent 的智能分析和生成能力，增加超时保护
+      const agentOutput = await Promise.race([
+        super.run(userMessage),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Newsletter Agent 执行超时')), 60000) // 60秒超时
+        )
+      ]) as any;
       
       console.log('🧠 Agent 分析完成:', agentOutput.message);
       console.log('🔧 工具调用次数:', agentOutput.toolCalls?.length || 0);
@@ -813,7 +818,7 @@ ${input.filteredContents.length > 10 ? `... 另外还有 ${input.filteredContent
       return output;
 
     } catch (error) {
-      console.error('❌ Newsletter Generator Agent 失败:', error);
+      console.error('❌ Newsletter Generator Agent 失败:', error instanceof Error ? error.message : String(error));
       
       // 返回基础简报
       return this.generateFallbackNewsletter(input);
@@ -838,17 +843,54 @@ ${input.filteredContents.length > 10 ? `... 另外还有 ${input.filteredContent
     );
 
     if (!analysisTool || !generationTool) {
-      throw new Error('未能从 Agent 工具调用中获取完整结果');
+      console.warn('⚠️ Agent 工具调用不完整，使用退化策略');
+      console.log(`   - 分析工具: ${analysisTool ? '✅' : '❌'}`);
+      console.log(`   - 生成工具: ${generationTool ? '✅' : '❌'}`);
+      
+      // 使用退化策略，不抛出错误
+      return this.createFallbackGenerationResults(input);
     }
 
-    const analysisResult = analysisTool.result;
-    const generationResult = generationTool.result;
+    try {
+      const analysisResult = analysisTool.result || {};
+      const generationResult = generationTool.result || {};
 
-    // 构建完整的简报
+      // 构建完整的简报
+      const newsletter = {
+        title: this.generateNewsletterTitle(input.focusKeywords || input.strategy?.searchFocus || []),
+        subtitle: this.generateNewsletterSubtitle(analysisResult.summary || {}),
+        sections: generationResult.sections || [],
+        footer: this.generateNewsletterFooter(),
+        generatedAt: new Date()
+      };
+
+      return {
+        newsletter,
+        analysisData: {
+          categorization: analysisResult.categorization || {},
+          trends: analysisResult.trends || [],
+          highlights: analysisResult.highlights || [],
+          summary: analysisResult.summary || {},
+          aiInsights: this.extractAIInsights(agentOutput.message || '')
+        }
+      };
+    } catch (error) {
+      console.error('❌ 提取生成结果失败:', error);
+      return this.createFallbackGenerationResults(input);
+    }
+  }
+
+  /**
+   * 创建退化生成结果
+   */
+  private createFallbackGenerationResults(input: NewsletterGeneratorInput): {
+    newsletter: NewsletterGeneratorOutput['newsletter'];
+    analysisData: any;
+  } {
     const newsletter = {
-      title: this.generateNewsletterTitle(input.focusKeywords || input.strategy?.searchFocus || []),
-      subtitle: this.generateNewsletterSubtitle(analysisResult.summary),
-      sections: generationResult.sections || [],
+      title: this.generateNewsletterTitle(input.strategy?.searchFocus || ['AI技术']),
+      subtitle: `简化版简报 - ${input.filteredContents.length} 条内容`,
+      sections: this.createBasicSections(input.filteredContents),
       footer: this.generateNewsletterFooter(),
       generatedAt: new Date()
     };
@@ -856,13 +898,50 @@ ${input.filteredContents.length > 10 ? `... 另外还有 ${input.filteredContent
     return {
       newsletter,
       analysisData: {
-        categorization: analysisResult.categorization,
-        trends: analysisResult.trends,
-        highlights: analysisResult.highlights,
-        summary: analysisResult.summary,
-        aiInsights: this.extractAIInsights(agentOutput.message)
+        categorization: {},
+        trends: [],
+        highlights: [],
+        summary: { totalContents: input.filteredContents.length },
+        aiInsights: ['使用了退化生成策略']
       }
     };
+  }
+
+  /**
+   * 创建基础章节
+   */
+  private createBasicSections(contents: SearchContent[]): NewsletterSection[] {
+    const sections: NewsletterSection[] = [];
+    
+    // 按来源分组
+    const bySource = {
+      github: contents.filter(c => c.source === 'github'),
+      twitter: contents.filter(c => c.source === 'twitter'),
+      google: contents.filter(c => c.source === 'google')
+    };
+    
+    Object.entries(bySource).forEach(([source, items], index) => {
+      if (items.length > 0) {
+        const sourceEmoji = source === 'github' ? '🐙' : source === 'twitter' ? '🐦' : '🔍';
+        let content = `## ${sourceEmoji} ${source.toUpperCase()} 动态\n\n`;
+        
+        items.slice(0, 3).forEach((item, i) => {
+          content += `### ${i + 1}. ${item.title}\n\n`;
+          content += `**链接：** [查看详情](${item.url})\n`;
+          content += `**时间：** ${item.timestamp.toLocaleString('zh-CN')}\n\n`;
+          content += `${item.content.substring(0, 150)}...\n\n---\n\n`;
+        });
+
+        sections.push({
+          title: `${source.toUpperCase()} 动态`,
+          type: source as any,
+          content,
+          priority: index + 1
+        });
+      }
+    });
+    
+    return sections;
   }
 
   /**
@@ -1031,6 +1110,7 @@ ${input.filteredContents.length > 10 ? `... 另外还有 ${input.filteredContent
         const finalOutput = {
           success: true,
           newsletter: result.newsletter,
+          contents: input.contents || [], // 添加 contents 字段，从输入获取过滤后的内容
           analysisData: result.analysisData,
           metadata: result.metadata || {},
           timestamp: new Date()

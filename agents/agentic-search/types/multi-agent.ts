@@ -338,40 +338,27 @@ export interface NewsletterGeneratorOutput {
  * 完整的 Agentic Search 输出
  */
 export interface AgenticSearchOutput {
+  // 执行状态
+  success: boolean;
+  error?: string;
+  
   // 核心内容
   newsletter: NewsletterGeneratorOutput['newsletter'];
-  markdownContent: string;
+  contents: SearchContent[]; // 过滤后的高质量内容数组
+  markdownContent?: string;
   
-  // 详细分析数据
-  searchExecution: {
-    strategy: AIEnhancedStrategy;
-    results: {
-      google: GoogleSearchResult;
-      twitter: TwitterSearchResult;
-      github: GitHubSearchResult;
-    };
-    qualityFilter: QualityFilterOutput;
-    generation: NewsletterGeneratorOutput;
-  };
-  
-  // 性能指标
-  performance: {
-    totalExecutionTime: number;
-    agentExecutionTimes: Record<string, number>;
-    parallelizationEfficiency: number;
-    resourceUsage: {
-      memoryPeak: number;
-      browserInstances: number;
-      apiCalls: number;
-    };
-  };
-  
-  // AI 洞察
-  aiInsights: {
-    trendingTopics: string[];
-    emergingPatterns: string[];
-    qualityGaps: string[];
-    futureRecommendations: string[];
+  // 搜索结果和分析数据
+  searchResults?: Record<string, number>;
+  qualityAnalysis?: any;
+  analytics?: any;
+  metadata?: {
+    executionTime: number;
+    timestamp: Date;
+    contentSources: string[];
+    totalContents: number;
+    finalContentCount: number;
+    qualityFilterRate: number;
+    errors?: string[];
   };
 }
 
