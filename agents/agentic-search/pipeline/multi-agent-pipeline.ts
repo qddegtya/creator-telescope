@@ -6,7 +6,7 @@ import { GoogleSearchAgent } from '../agents/google-search-agent.js';
 import { TwitterSearchAgent } from '../agents/twitter-search-agent.js';
 import { GitHubSearchAgent } from '../agents/github-search-agent.js';
 import { QualityFilterAgent } from '../agents/quality-filter-agent.js';
-import { NewsletterGeneratorAgent } from '../agents/newsletter-generator-agent.js';
+// 移除 NewsletterGeneratorAgent - 直接输出周刊格式
 
 import { DynamicConfigManager } from '../config/dynamic-config-manager.js';
 import { BrowserPool } from '../infrastructure/browser-pool.js';
@@ -20,7 +20,7 @@ import {
   SearchResult,
   SearchContent,
   QualityFilterOutput,
-  NewsletterGeneratorOutput
+  // NewsletterGeneratorOutput - 已移除
 } from '../types/multi-agent.js';
 
 /**
@@ -40,7 +40,7 @@ export class MultiAgentSearchPipeline extends Pipeline {
   private twitterSearchAgent: TwitterSearchAgent;
   private githubSearchAgent: GitHubSearchAgent;
   private qualityFilterAgent: QualityFilterAgent;
-  private newsletterGeneratorAgent: NewsletterGeneratorAgent;
+  // 移除 newsletterGeneratorAgent - 直接输出周刊格式
 
   private configManager: DynamicConfigManager;
   private browserPool: BrowserPool;
@@ -83,10 +83,10 @@ export class MultiAgentSearchPipeline extends Pipeline {
       defaultStrategy: 'balanced'
     });
 
-    // 初始化浏览器池
+    // 初始化浏览器池（用于 Twitter Agent，需要支持人工干预）
     this.browserPool = new BrowserPool({
       maxBrowsers: 8,
-      headless: true,
+      headless: false, // Twitter Agent需要非headless模式支持人工干预
       defaultTimeout: 30000
     });
 
@@ -106,11 +106,11 @@ export class MultiAgentSearchPipeline extends Pipeline {
   private initializeAgents(): void {
     // 创建 Agent 实例
     this.coordinatorAgent = new CoordinatorAgent();
-    this.googleSearchAgent = new GoogleSearchAgent(this.browserPool);
-    this.twitterSearchAgent = new TwitterSearchAgent(this.browserPool);
+    this.googleSearchAgent = new GoogleSearchAgent(); // 使用自己的 headless BrowserPool
+    this.twitterSearchAgent = new TwitterSearchAgent(this.browserPool); // 使用共享的非 headless BrowserPool
     this.githubSearchAgent = new GitHubSearchAgent();
     this.qualityFilterAgent = new QualityFilterAgent();
-    this.newsletterGeneratorAgent = new NewsletterGeneratorAgent();
+    // 移除 NewsletterGeneratorAgent 实例化
 
     // 将 Agent 添加到管道
     this.addComponent('coordinator', this.coordinatorAgent);
@@ -118,7 +118,7 @@ export class MultiAgentSearchPipeline extends Pipeline {
     this.addComponent('twitter_search', this.twitterSearchAgent);
     this.addComponent('github_search', this.githubSearchAgent);
     this.addComponent('quality_filter', this.qualityFilterAgent);
-    this.addComponent('newsletter_generator', this.newsletterGeneratorAgent);
+    // 移除 newsletter_generator 组件
 
     console.log('🤖 所有 Agent 组件已添加到管道');
   }
@@ -132,9 +132,11 @@ export class MultiAgentSearchPipeline extends Pipeline {
     // 添加数据聚合组件
     const searchAggregator = this.createSearchAggregator();
     const qualityProcessor = this.createQualityProcessor(this.qualityFilterAgent, this.executionStats);
+    const contentFormatter = this.createContentFormatter();
 
     this.addComponent('search_aggregator', searchAggregator);
     this.addComponent('quality_processor', qualityProcessor);
+    this.addComponent('content_formatter', contentFormatter);
 
     // 配置管道流程
     this.setupPipelineFlow();
@@ -156,20 +158,22 @@ export class MultiAgentSearchPipeline extends Pipeline {
     this.connect('coordinator.tasks', 'search_aggregator.task_distribution');
     
     // 阶段 2: 搜索聚合器分发任务给各个搜索引擎
-    this.connect('search_aggregator.google_task', 'google_search.in');
+    this.connect('search_aggregator.google_task', 'google_search.task');
     this.connect('search_aggregator.twitter_task', 'twitter_search.task');
     this.connect('search_aggregator.github_task', 'github_search.in');
     
     // 阶段 3: 各搜索引擎结果回到聚合器
-    this.connect('google_search.out', 'search_aggregator.google_results');
+    this.connect('google_search.result', 'search_aggregator.google_results');
     this.connect('twitter_search.result', 'search_aggregator.twitter_results');
     this.connect('github_search.out', 'search_aggregator.github_results');
     
     // 阶段 4: 聚合结果 -> 质量过滤
     this.connect('search_aggregator.aggregated_results', 'quality_processor.input');
     
-    // 阶段 5: 过滤结果 -> 新闻稿生成 (管道终点)
-    this.connect('quality_processor.filtered_results', 'newsletter_generator.in');
+    // 阶段 5: 过滤结果 -> 内容格式化器 (直接输出周刊格式)
+    this.connect('quality_processor.filtered_results', 'content_formatter.input');
+    
+    // 阶段 6: content_formatter使用标准'out'端口作为管道终点 (AStack Pipeline会自动连接到end.in)
     
     console.log('✅ Multi-Agent 管道流程配置完成');
   }
@@ -320,54 +324,39 @@ export class MultiAgentSearchPipeline extends Pipeline {
   }
 
   /**
-   * 创建内容格式化器
+   * 创建内容格式化器 - 直接输出周刊格式
    */
   private createContentFormatter(): Component {
     const formatter = new Component();
 
+    // 使用标准的输入端口，但保持自定义名称以便连接
     Component.Port.I('input').attach(formatter);
-    Component.Port.I('newsletter_data').attach(formatter);
-    Component.Port.O('formatted_content').attach(formatter);
-    Component.Port.O('final_output').attach(formatter);
-
-    let filteredData: any = null;
-    let newsletterData: any = null;
+    // 注意：Component基类已经自动创建了默认的'out'端口，这是AStack Pipeline期望的
 
     formatter._transform = ($i, $o) => {
-      $i('input').receive((data: any) => {
-        filteredData = data;
+      $i('input').receive(async (data: any) => {
+        // 直接从质量过滤结果生成周刊格式
+        const contents = data.filteredContents || [];
         
-        // 准备新闻简报生成输入
-        const newsletterInput = {
-          contents: data.filteredContents,
-          focusKeywords: data.strategy?.searchTargets || ['AI', 'technology'],
-          template: {
-            title: 'AI 技术日报',
-            sections: ['summary', 'highlights', 'trends', 'technical', 'community', 'projects', 'conclusion'],
-            format: 'markdown'
-          }
-        };
-
-        $o('formatted_content').send(newsletterInput);
-      });
-
-      $i('newsletter_data').receive((newsletter: NewsletterGeneratorOutput) => {
-        newsletterData = newsletter;
-
+        console.log(`📝 开始生成周刊格式，内容数量: ${contents.length}`);
+        
+        // 生成周刊 Markdown 内容
+        const weeklyMarkdown = this.generateWeeklyMarkdown(contents);
+        
         // 生成最终输出
         const finalOutput: AgenticSearchOutput = {
           success: true,
-          newsletter: newsletter.newsletter,
-          contents: filteredData?.filteredContents || [], // 添加过滤后的内容数组
+          weeklyMarkdown, // 直接的周刊 markdown 内容
+          contents: contents,
           searchResults: this.executionStats.searchResults,
-          qualityAnalysis: filteredData?.qualityAnalysis || {},
+          qualityAnalysis: data.qualityAnalysis || {},
           analytics: this.generateAnalytics(),
           metadata: {
             executionTime: this.executionStats.totalDuration || 0,
             timestamp: new Date(),
             contentSources: Object.keys(this.executionStats.searchResults),
             totalContents: Object.values(this.executionStats.searchResults).reduce((sum, count) => sum + count, 0),
-            finalContentCount: filteredData?.filteredContents?.length || 0,
+            finalContentCount: contents.length,
             qualityFilterRate: this.executionStats.qualityFilterResults?.filterRate || 0
           }
         };
@@ -379,7 +368,16 @@ export class MultiAgentSearchPipeline extends Pipeline {
         console.log(`   ✨ 高质量内容: ${finalOutput.metadata?.finalContentCount}`);
         console.log(`   ⏱️ 执行时间: ${finalOutput.metadata?.executionTime}ms`);
 
-        $o('final_output').send(finalOutput);
+        // 直接保存周刊到文件系统
+        try {
+          await this.saveWeeklyToFile(weeklyMarkdown);
+          console.log('📄 周刊文件保存成功');
+        } catch (error) {
+          console.warn('⚠️ 周刊保存失败:', error instanceof Error ? error.message : String(error));
+        }
+
+        // 使用标准的'out'端口发送最终结果，这样AStack Pipeline能正确处理
+        $o('out').send(finalOutput);
       });
     };
 
@@ -795,6 +793,231 @@ export class MultiAgentSearchPipeline extends Pipeline {
   }
 
   /**
+   * 生成周刊 Markdown 格式
+   */
+  private generateWeeklyMarkdown(contents: SearchContent[]): string {
+    const today = new Date();
+    const dateStr = today.toISOString().split('T')[0]; // YYYY-MM-DD格式
+    
+    // 统计内容来源
+    const githubCount = contents.filter(c => c.source === 'github').length;
+    const twitterCount = contents.filter(c => c.source === 'twitter').length;
+    const googleCount = contents.filter(c => c.source === 'google').length;
+    
+    // 生成总结
+    const summary = `本期我们收集了 ${contents.length} 条 AI Agent 相关的精选内容，包括 ${githubCount} 个 GitHub 项目、${twitterCount} 条 Twitter 动态和 ${googleCount} 条搜索结果。涵盖了最新的技术趋势、开源项目和社区讨论，为开发者和技术从业者提供有价值的信息参考。`;
+    
+    // 生成 contentList - 直接使用所有内容，不做数量限制
+    const contentList = contents.map(content => {
+      return {
+        link: content.url,
+        title: content.title,
+        description: this.enhanceContentDescription(content)
+      };
+    });
+    
+    // 生成完整的 frontmatter
+    const frontmatter = {
+      date: dateStr,
+      summary,
+      contentList
+    };
+    
+    // 转换为 YAML frontmatter + markdown
+    const yamlContent = this.objectToYaml(frontmatter);
+    
+    return `---\n${yamlContent}---\n`;
+  }
+
+  /**
+   * 增强内容描述 - 信息增强而非压缩
+   */
+  private enhanceContentDescription(content: SearchContent): string {
+    if (!content.content) return '';
+
+    let description = '';
+    
+    // 根据来源类型添加专业化信息增强
+    if (content.source === 'github') {
+      description = this.enhanceGitHubDescription(content);
+    } else if (content.source === 'twitter') {
+      description = this.enhanceTwitterDescription(content);
+    } else if (content.source === 'google') {
+      description = this.enhanceGoogleDescription(content);
+    } else {
+      description = content.content;
+    }
+    
+    // 确保中英文间的空格格式
+    description = this.formatChineseEnglishSpacing(description);
+    
+    return description;
+  }
+
+  /**
+   * 增强GitHub项目描述
+   */
+  private enhanceGitHubDescription(content: SearchContent): string {
+    const parts = [`🐙 **GitHub 项目** - ${content.content}`];
+    
+    // 添加技术栈信息
+    if (content.metadata?.language) {
+      parts.push(`**技术栈**: ${content.metadata.language}`);
+    }
+    
+    // 添加社区数据
+    if (content.metadata?.stars) {
+      const stars = content.metadata.stars.toLocaleString();
+      parts.push(`**社区热度**: ⭐ ${stars} stars`);
+    }
+    
+    // 添加更新状态
+    if (content.timestamp) {
+      const timeDiff = Date.now() - content.timestamp.getTime();
+      const daysDiff = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
+      if (daysDiff <= 7) {
+        parts.push(`**状态**: 🔥 最近 ${daysDiff} 天内有更新`);
+      }
+    }
+    
+    return parts.join(' | ');
+  }
+
+  /**
+   * 增强Twitter动态描述
+   */
+  private enhanceTwitterDescription(content: SearchContent): string {
+    const parts = [`🐦 **Twitter 动态** - ${content.content}`];
+    
+    // 添加互动数据
+    if (content.metadata?.engagement) {
+      const { likes, shares, comments } = content.metadata.engagement;
+      if (likes > 0 || shares > 0) {
+        const engagement = [];
+        if (likes > 0) engagement.push(`❤️ ${likes}`);
+        if (shares > 0) engagement.push(`🔄 ${shares}`);
+        if (comments > 0) engagement.push(`💬 ${comments}`);
+        parts.push(`**互动**: ${engagement.join(' ')}`);
+      }
+    }
+    
+    // 添加作者信息
+    if (content.author && content.metadata?.userHandle) {
+      parts.push(`**作者**: @${content.metadata.userHandle}`);
+    }
+    
+    // 添加媒体类型
+    if (content.metadata?.hasMedia) {
+      const mediaTypes = [];
+      if (content.metadata.mediaTypes?.hasImage) mediaTypes.push('图片');
+      if (content.metadata.mediaTypes?.hasVideo) mediaTypes.push('视频');
+      if (mediaTypes.length > 0) {
+        parts.push(`**媒体**: ${mediaTypes.join('、')}`);
+      }
+    }
+    
+    return parts.join(' | ');
+  }
+
+  /**
+   * 增强搜索发现描述
+   */
+  private enhanceGoogleDescription(content: SearchContent): string {
+    const parts = [`🔍 **搜索发现** - ${content.content}`];
+    
+    // 添加来源网站信息
+    if (content.url) {
+      try {
+        const domain = new URL(content.url).hostname;
+        parts.push(`**来源**: ${domain}`);
+      } catch (e) {
+        // URL解析失败，忽略
+      }
+    }
+    
+    // 添加时效性标记
+    if (content.timestamp) {
+      const hoursAgo = Math.floor((Date.now() - content.timestamp.getTime()) / (1000 * 60 * 60));
+      if (hoursAgo < 24) {
+        parts.push(`**时效**: 🔥 ${hoursAgo} 小时内发布`);
+      }
+    }
+    
+    return parts.join(' | ');
+  }
+
+  /**
+   * 确保中英文间空格格式
+   */
+  private formatChineseEnglishSpacing(text: string): string {
+    // 中文字符后跟英文字符，添加空格
+    text = text.replace(/([一-龯])([a-zA-Z0-9])/g, '$1 $2');
+    // 英文字符后跟中文字符，添加空格  
+    text = text.replace(/([a-zA-Z0-9])([一-龯])/g, '$1 $2');
+    // 清理多余的空格
+    text = text.replace(/\s+/g, ' ');
+    return text.trim();
+  }
+
+  /**
+   * 将对象转换为 YAML 格式
+   */
+  private objectToYaml(obj: any, indent = 0): string {
+    const spaces = ' '.repeat(indent);
+    let yaml = '';
+    
+    for (const [key, value] of Object.entries(obj)) {
+      if (Array.isArray(value)) {
+        yaml += `${spaces}${key}: [\n`;
+        (value as any[]).forEach((item, index) => {
+          yaml += `${spaces}  {\n`;
+          for (const [itemKey, itemValue] of Object.entries(item)) {
+            const escapedValue = typeof itemValue === 'string' 
+              ? `"${(itemValue as string).replace(/"/g, '\\"')}"` 
+              : itemValue;
+            yaml += `${spaces}    ${itemKey}: ${escapedValue},\n`;
+          }
+          yaml += `${spaces}  }${index < value.length - 1 ? ',' : ''}\n`;
+        });
+        yaml += `${spaces}]\n`;
+      } else if (typeof value === 'string') {
+        const escapedValue = `"${value.replace(/"/g, '\\"')}"`;
+        yaml += `${spaces}${key}: ${escapedValue}\n`;
+      } else {
+        yaml += `${spaces}${key}: ${value}\n`;
+      }
+    }
+    
+    return yaml;
+  }
+
+  /**
+   * 保存周刊到文件系统
+   */
+  private async saveWeeklyToFile(markdownContent: string): Promise<void> {
+    const fs = await import('fs');
+    const path = await import('path');
+    
+    // 生成文件名
+    const now = new Date();
+    const timestamp = now.toISOString().replace(/[:.]/g, '-').slice(0, 19); // YYYY-MM-DDTHH-MM-SS
+    const fileName = `weekly-${timestamp}.md`;
+    
+    // 确保输出目录存在
+    const outputDir = path.join(process.cwd(), 'output', 'newsletters');
+    if (!fs.existsSync(outputDir)) {
+      fs.mkdirSync(outputDir, { recursive: true });
+    }
+    
+    const filePath = path.join(outputDir, fileName);
+    
+    // 直接写入周刊 markdown 内容
+    fs.writeFileSync(filePath, markdownContent, 'utf-8');
+    
+    console.log(`📝 周刊已保存到: ${filePath}`);
+  }
+
+  /**
    * 清理资源
    */
   async cleanup(): Promise<void> {
@@ -839,16 +1062,8 @@ export class MultiAgentSearchPipeline extends Pipeline {
       try {
         const result = await this.execute(input);
         
-        // 发送不同类型的输出
-        $o('search_output').send(result);
-        
-        if (result.newsletter) {
-          $o('newsletter').send(result.newsletter);
-        }
-        
-        if (result.analytics) {
-          $o('analytics').send(result.analytics);
-        }
+        // 发送最终输出
+        $o('final_output').send(result);
 
       } catch (error) {
         console.error('[MultiAgentSearchPipeline] 执行失败:', error);

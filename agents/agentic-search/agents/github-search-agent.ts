@@ -66,18 +66,16 @@ export class GitHubSearchAgent extends Component {
         throw new Error('GitHub Token 未配置，请设置 GITHUB_TOKEN 环境变量');
       }
 
-      // 并行执行仓库搜索和代码搜索
+      // 优化搜索策略：专注于仓库搜索和趋势发现
       const searchPromises: Promise<SearchContent[]>[] = [];
 
-      if (task.searchScope.includes('repositories')) {
-        console.log('📦 执行仓库搜索...');
-        searchPromises.push(this.searchRepositories(task));
-      }
+      console.log('🔥 获取 GitHub Trending 项目...');
+      searchPromises.push(this.getTrendingRepositories(task));
+      
+      console.log('📦 执行优化仓库搜索...');
+      searchPromises.push(this.searchRepositoriesOptimized(task));
 
-      if (task.searchScope.includes('code')) {
-        console.log('💻 执行代码搜索...');
-        searchPromises.push(this.searchCode(task));
-      }
+      // 移除代码搜索 - 经常超时且价值有限
 
       // 等待所有搜索完成
       const searchResults = await Promise.allSettled(searchPromises);
@@ -86,9 +84,10 @@ export class GitHubSearchAgent extends Component {
       for (const result of searchResults) {
         if (result.status === 'fulfilled') {
           allResults.push(...result.value);
+          console.log(`✅ 搜索任务完成: ${result.value.length} 个结果`);
         } else {
           searchErrors.push(result.reason?.message || '未知搜索错误');
-          console.error('❌ GitHub 搜索部分失败:', result.reason);
+          console.warn('⚠️ 搜索任务部分失败:', result.reason?.message);
         }
       }
 
@@ -158,7 +157,272 @@ export class GitHubSearchAgent extends Component {
   }
 
   /**
-   * 搜索 GitHub 仓库
+   * 获取 GitHub Trending 仓库
+   */
+  private async getTrendingRepositories(task: GitHubSearchTask): Promise<SearchContent[]> {
+    const results: SearchContent[] = [];
+
+    try {
+      console.log('🔥 获取 GitHub Trending 仓库...');
+      
+      // 使用关键词搜索热门仓库（按星标排序）
+      for (const keyword of task.keywords.slice(0, 3)) { // 限制关键词数量避免超时
+        const query = `${keyword} sort:stars stars:>=10`;
+        
+        const response = await this.executeWithRateLimit(async () => {
+          return await this.octokit.rest.search.repos({
+            q: query,
+            sort: 'stars',
+            order: 'desc', 
+            per_page: 15 // 每个关键词获取15个最热门的
+          });
+        });
+
+        console.log(`📈 ${keyword} trending: ${response.data.items.length} 个仓库`);
+
+        // 处理每个仓库
+        for (const repo of response.data.items) {
+          if (repo.archived || repo.fork) continue; // 跳过已归档和fork仓库
+
+          // 获取 README 内容
+          const readmeContent = await this.fetchRepositoryReadme(repo);
+          
+          const searchContent: SearchContent = {
+            id: `github-trending-${repo.id}`,
+            title: repo.full_name,
+            content: this.buildEnhancedRepositoryContent(repo, readmeContent),
+            url: repo.html_url,
+            timestamp: new Date(repo.updated_at),
+            source: 'github',
+            author: repo.owner?.login || 'unknown',
+            metadata: {
+              type: 'repository',
+              stars: repo.stargazers_count,
+              forks: repo.forks_count,
+              language: repo.language,
+              topics: repo.topics || [],
+              license: repo.license?.name,
+              size: repo.size,
+              openIssues: repo.open_issues_count,
+              watchers: repo.watchers_count,
+              isArchived: repo.archived,
+              isFork: repo.fork,
+              hasPages: repo.has_pages,
+              defaultBranch: repo.default_branch,
+              createdAt: repo.created_at,
+              pushedAt: repo.pushed_at,
+              hasReadme: !!readmeContent
+            }
+          };
+
+          results.push(searchContent);
+        }
+
+        // API 限制保护
+        await this.respectApiLimits();
+      }
+
+      console.log(`✅ Trending 搜索完成: ${results.length} 个结果`);
+      return results;
+
+    } catch (error) {
+      console.error('❌ Trending 搜索失败:', error);
+      return results; // 返回部分结果
+    }
+  }
+
+  /**
+   * 优化仓库搜索
+   */
+  private async searchRepositoriesOptimized(task: GitHubSearchTask): Promise<SearchContent[]> {
+    const results: SearchContent[] = [];
+
+    try {
+      console.log('📦 执行优化仓库搜索...');
+      
+      // 使用更精准的搜索策略
+      for (const keyword of task.keywords.slice(0, 2)) { // 限制关键词数量
+        const query = this.buildOptimizedQuery(keyword, task);
+        
+        console.log(`🔍 优化查询: ${query}`);
+
+        const response = await this.executeWithRateLimit(async () => {
+          return await this.octokit.rest.search.repos({
+            q: query,
+            sort: 'updated',
+            order: 'desc',
+            per_page: 20
+          });
+        });
+
+        console.log(`📦 ${keyword} 搜索: ${response.data.items.length} 个仓库`);
+
+        // 处理搜索结果
+        for (const repo of response.data.items) {
+          if (!this.passesRepositoryFilters(repo, task)) continue;
+
+          // 获取 README 内容
+          const readmeContent = await this.fetchRepositoryReadme(repo);
+          
+          const searchContent: SearchContent = {
+            id: `github-repo-${repo.id}`,
+            title: repo.full_name,
+            content: this.buildEnhancedRepositoryContent(repo, readmeContent),
+            url: repo.html_url,
+            timestamp: new Date(repo.updated_at),
+            source: 'github',
+            author: repo.owner?.login || 'unknown',
+            metadata: {
+              type: 'repository',
+              stars: repo.stargazers_count,
+              forks: repo.forks_count,
+              language: repo.language,
+              topics: repo.topics || [],
+              license: repo.license?.name,
+              size: repo.size,
+              openIssues: repo.open_issues_count,
+              watchers: repo.watchers_count,
+              isArchived: repo.archived,
+              isFork: repo.fork,
+              hasPages: repo.has_pages,
+              defaultBranch: repo.default_branch,
+              createdAt: repo.created_at,
+              pushedAt: repo.pushed_at,
+              hasReadme: !!readmeContent
+            }
+          };
+
+          results.push(searchContent);
+        }
+
+        // API 限制保护
+        await this.respectApiLimits();
+      }
+
+      console.log(`✅ 优化搜索完成: ${results.length} 个结果`);
+      return results;
+
+    } catch (error) {
+      console.error('❌ 优化搜索失败:', error);
+      return results;
+    }
+  }
+
+  /**
+   * 获取仓库 README 内容
+   */
+  private async fetchRepositoryReadme(repo: any): Promise<string | null> {
+    try {
+      const response = await this.executeWithRateLimit(async () => {
+        return await this.octokit.rest.repos.getReadme({
+          owner: repo.owner.login,
+          repo: repo.name
+        });
+      });
+
+      // 解码 base64 内容
+      const content = Buffer.from(response.data.content, 'base64').toString('utf-8');
+      
+      // 提取前500个字符作为摘要
+      return content.slice(0, 500) + (content.length > 500 ? '...' : '');
+      
+    } catch (error) {
+      // README 不存在或无法访问
+      console.log(`⚠️ 无法获取 ${repo.full_name} 的 README`);
+      return null;
+    }
+  }
+
+  /**
+   * 构建优化的搜索查询
+   */
+  private buildOptimizedQuery(keyword: string, task: GitHubSearchTask): string {
+    const queryParts: string[] = [keyword];
+
+    // 基础过滤条件
+    queryParts.push('fork:false');
+    queryParts.push('archived:false');
+    
+    // 最小星标要求
+    const minStars = Math.max(task.filters?.minStars || 5, 5);
+    queryParts.push(`stars:>=${minStars}`);
+
+    // 时间过滤 - 确保时效性
+    const cutoffDate = task.filters?.pushedAfter || '2024-01-01';
+    queryParts.push(`pushed:>=${cutoffDate}`);
+
+    // 如果有语言偏好，添加到查询中
+    if (task.languages && task.languages.length > 0) {
+      const languages = task.languages.slice(0, 2).join(' OR language:');
+      queryParts.push(`language:${languages}`);
+    }
+
+    return queryParts.join(' ');
+  }
+
+  /**
+   * 构建增强的仓库内容（包含 README 信息）
+   */
+  private buildEnhancedRepositoryContent(repo: any, readmeContent?: string | null): string {
+    const parts: string[] = [];
+
+    // 基本描述
+    if (repo.description) {
+      parts.push(`📝 **项目描述**: ${repo.description}`);
+    }
+
+    // README 摘要
+    if (readmeContent) {
+      parts.push(`📖 **README 摘要**: ${readmeContent}`);
+    }
+
+    // 技术栈信息
+    const techInfo: string[] = [];
+    if (repo.language) {
+      techInfo.push(`主要语言: ${repo.language}`);
+    }
+    if (repo.topics && repo.topics.length > 0) {
+      techInfo.push(`标签: ${repo.topics.slice(0, 5).join(', ')}`);
+    }
+    if (techInfo.length > 0) {
+      parts.push(`🔧 **技术栈**: ${techInfo.join(' | ')}`);
+    }
+
+    // 社区活跃度
+    const activityInfo = [
+      `⭐ ${repo.stargazers_count.toLocaleString()} stars`,
+      `🍴 ${repo.forks_count.toLocaleString()} forks`,
+      `👁️ ${repo.watchers_count.toLocaleString()} watchers`
+    ].join(' | ');
+    parts.push(`📊 **社区活跃度**: ${activityInfo}`);
+
+    // 项目状态
+    const statusInfo: string[] = [];
+    if (repo.open_issues_count > 0) {
+      statusInfo.push(`🐛 ${repo.open_issues_count} open issues`);
+    }
+    
+    const lastUpdate = new Date(repo.updated_at).toLocaleDateString('zh-CN');
+    statusInfo.push(`📅 最后更新: ${lastUpdate}`);
+    
+    if (repo.license) {
+      statusInfo.push(`⚖️ 许可证: ${repo.license.name}`);
+    }
+    
+    parts.push(`🔄 **项目状态**: ${statusInfo.join(' | ')}`);
+
+    // 项目链接
+    const links: string[] = [`🏠 [仓库地址](${repo.html_url})`];
+    if (repo.homepage) {
+      links.push(`🌐 [官方网站](${repo.homepage})`);
+    }
+    parts.push(`🔗 **相关链接**: ${links.join(' | ')}`);
+
+    return parts.join('\n\n');
+  }
+
+  /**
+   * 搜索 GitHub 仓库（旧版本，保留备用）
    */
   private async searchRepositories(task: GitHubSearchTask): Promise<SearchContent[]> {
     const results: SearchContent[] = [];

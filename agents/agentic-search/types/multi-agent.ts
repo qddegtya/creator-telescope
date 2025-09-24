@@ -343,9 +343,8 @@ export interface AgenticSearchOutput {
   error?: string;
   
   // 核心内容
-  newsletter: NewsletterGeneratorOutput['newsletter'];
+  weeklyMarkdown?: string; // 直接的周刊 markdown 内容
   contents: SearchContent[]; // 过滤后的高质量内容数组
-  markdownContent?: string;
   
   // 搜索结果和分析数据
   searchResults?: Record<string, number>;

@@ -765,10 +765,10 @@ export class NewsletterGeneratorAgent extends Agent {
 - 简报模板：标准技术简报
 
 **内容列表：**
-${input.filteredContents.slice(0, 10).map((content, i) => 
+${input.filteredContents.slice(0, 30).map((content, i) => 
   `${i + 1}. ${content.title} (${content.source}) - 质量分: ${(content as any).qualityScore || 'N/A'}`
 ).join('\n')}
-${input.filteredContents.length > 10 ? `... 另外还有 ${input.filteredContents.length - 10} 条内容` : ''}
+${input.filteredContents.length > 30 ? `... 另外还有 ${input.filteredContents.length - 30} 条内容` : ''}
 
 **生成要求：**
 1. 使用 analyze_and_categorize_content 工具对所有内容进行深度分析
@@ -846,8 +846,9 @@ ${input.filteredContents.length > 10 ? `... 另外还有 ${input.filteredContent
       console.warn('⚠️ Agent 工具调用不完整，使用退化策略');
       console.log(`   - 分析工具: ${analysisTool ? '✅' : '❌'}`);
       console.log(`   - 生成工具: ${generationTool ? '✅' : '❌'}`);
+      console.log(`   - 输入内容数量: ${input.filteredContents.length}`);
       
-      // 使用退化策略，不抛出错误
+      // 使用退化策略，确保生成有效内容
       return this.createFallbackGenerationResults(input);
     }
 
@@ -913,35 +914,261 @@ ${input.filteredContents.length > 10 ? `... 另外还有 ${input.filteredContent
   private createBasicSections(contents: SearchContent[]): NewsletterSection[] {
     const sections: NewsletterSection[] = [];
     
-    // 按来源分组
-    const bySource = {
-      github: contents.filter(c => c.source === 'github'),
-      twitter: contents.filter(c => c.source === 'twitter'),
-      google: contents.filter(c => c.source === 'google')
-    };
-    
-    Object.entries(bySource).forEach(([source, items], index) => {
-      if (items.length > 0) {
-        const sourceEmoji = source === 'github' ? '🐙' : source === 'twitter' ? '🐦' : '🔍';
-        let content = `## ${sourceEmoji} ${source.toUpperCase()} 动态\n\n`;
-        
-        items.slice(0, 3).forEach((item, i) => {
-          content += `### ${i + 1}. ${item.title}\n\n`;
-          content += `**链接：** [查看详情](${item.url})\n`;
-          content += `**时间：** ${item.timestamp.toLocaleString('zh-CN')}\n\n`;
-          content += `${item.content.substring(0, 150)}...\n\n---\n\n`;
-        });
-
-        sections.push({
-          title: `${source.toUpperCase()} 动态`,
-          type: source as any,
-          content,
-          priority: index + 1
-        });
-      }
+    console.log(`📝 创建基础章节 - 输入内容: ${contents.length} 条`);
+    contents.forEach((c, i) => {
+      console.log(`   ${i + 1}. 来源: ${c.source}, 标题: ${c.title?.substring(0, 50) || 'N/A'}`);
     });
     
+    // 直接生成标准周刊格式
+    if (contents.length > 0) {
+      const weeklyContent = this.generateWeeklyMarkdown(contents);
+      sections.push({
+        title: 'Creator Telescope 周刊',
+        type: 'weekly',
+        content: weeklyContent,
+        priority: 1
+      });
+      console.log(`✅ 生成标准周刊格式内容，包含 ${contents.length} 条精选内容`);
+    } else {
+      // 如果没有内容，生成空的周刊模板
+      console.warn('⚠️ 没有有效内容，生成空周刊模板');
+      const emptyWeekly = this.generateEmptyWeekly();
+      sections.push({
+        title: 'Creator Telescope 周刊',
+        type: 'weekly', 
+        content: emptyWeekly,
+        priority: 1
+      });
+    }
+    
+    console.log(`✅ 创建章节完成: ${sections.length} 个章节`);
     return sections;
+  }
+
+  /**
+   * 生成空的周刊模板
+   */
+  private generateEmptyWeekly(): string {
+    const today = new Date();
+    const dateStr = today.toISOString().split('T')[0];
+    
+    const frontmatter = {
+      date: dateStr,
+      summary: "本期暂无有效内容，请等待下一期更新。",
+      contentList: []
+    };
+    
+    const yamlContent = this.objectToYaml(frontmatter);
+    return `---\n${yamlContent}---\n`;
+  }
+
+  /**
+   * 生成标准周刊 Markdown 格式
+   */
+  private generateWeeklyMarkdown(contents: SearchContent[], strategy?: any): string {
+    const today = new Date();
+    const dateStr = today.toISOString().split('T')[0]; // YYYY-MM-DD格式
+    
+    // 生成总结
+    const githubCount = contents.filter(c => c.source === 'github').length;
+    const twitterCount = contents.filter(c => c.source === 'twitter').length;
+    const googleCount = contents.filter(c => c.source === 'google').length;
+    
+    const summary = `本期我们收集了 ${contents.length} 条 AI Agent 相关的精选内容，包括 ${githubCount} 个 GitHub 项目、${twitterCount} 条 Twitter 动态和 ${googleCount} 条搜索结果。涵盖了最新的技术趋势、开源项目和社区讨论，为开发者和技术从业者提供有价值的信息参考。`;
+    
+    // 生成 contentList - 信息增强而非压缩
+    const contentList = contents.slice(0, 40).map(content => { // 大幅增加条目数量以获得丰富内容
+      const item: any = {
+        link: content.url,
+        title: content.title,
+        description: this.enhanceContentDescription(content) // 使用信息增强而非截断
+      };
+      
+      return item;
+    });
+    
+    // 生成完整的 frontmatter
+    const frontmatter = {
+      date: dateStr,
+      summary,
+      contentList
+    };
+    
+    // 转换为 YAML frontmatter + markdown
+    const yamlContent = this.objectToYaml(frontmatter);
+    
+    return `---\n${yamlContent}---\n`;
+  }
+
+  /**
+   * 将对象转换为 YAML 格式
+   */
+  private objectToYaml(obj: any, indent = 0): string {
+    const spaces = ' '.repeat(indent);
+    let yaml = '';
+    
+    for (const [key, value] of Object.entries(obj)) {
+      if (Array.isArray(value)) {
+        yaml += `${spaces}${key}: [\n`;
+        (value as any[]).forEach((item, index) => {
+          yaml += `${spaces}  {\n`;
+          for (const [itemKey, itemValue] of Object.entries(item)) {
+            const escapedValue = typeof itemValue === 'string' 
+              ? `"${(itemValue as string).replace(/"/g, '\\"')}"` 
+              : itemValue;
+            yaml += `${spaces}    ${itemKey}: ${escapedValue},\n`;
+          }
+          yaml += `${spaces}  }${index < value.length - 1 ? ',' : ''}\n`;
+        });
+        yaml += `${spaces}]\n`;
+      } else if (typeof value === 'string') {
+        const escapedValue = `"${value.replace(/"/g, '\\"')}"`;
+        yaml += `${spaces}${key}: ${escapedValue}\n`;
+      } else {
+        yaml += `${spaces}${key}: ${value}\n`;
+      }
+    }
+    
+    return yaml;
+  }
+
+  /**
+   * 增强内容描述 - 信息增强而非压缩
+   */
+  private enhanceContentDescription(content: SearchContent): string {
+    if (!content.content) return '';
+
+    let description = '';
+    
+    // 根据来源类型添加专业化信息增强
+    if (content.source === 'github') {
+      description = this.enhanceGitHubDescription(content);
+    } else if (content.source === 'twitter') {
+      description = this.enhanceTwitterDescription(content);
+    } else if (content.source === 'google') {
+      description = this.enhanceGoogleDescription(content);
+    } else {
+      description = content.content;
+    }
+    
+    // 确保中英文间的空格格式
+    description = this.formatChineseEnglishSpacing(description);
+    
+    return description;
+  }
+
+  /**
+   * 增强GitHub项目描述
+   */
+  private enhanceGitHubDescription(content: SearchContent): string {
+    const parts = [`🐙 **GitHub 项目** - ${content.content}`];
+    
+    // 添加技术栈信息
+    if (content.metadata?.language) {
+      parts.push(`**技术栈**: ${content.metadata.language}`);
+    }
+    
+    // 添加社区数据
+    if (content.metadata?.stars) {
+      const stars = content.metadata.stars.toLocaleString();
+      parts.push(`**社区热度**: ⭐ ${stars} stars`);
+    }
+    
+    // 添加更新状态
+    if (content.timestamp) {
+      const timeDiff = Date.now() - content.timestamp.getTime();
+      const daysDiff = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
+      if (daysDiff <= 7) {
+        parts.push(`**状态**: 🔥 最近 ${daysDiff} 天内有更新`);
+      }
+    }
+    
+    return parts.join(' | ');
+  }
+
+  /**
+   * 增强Twitter动态描述
+   */
+  private enhanceTwitterDescription(content: SearchContent): string {
+    const parts = [`🐦 **Twitter 动态** - ${content.content}`];
+    
+    // 添加互动数据
+    if (content.metadata?.engagement) {
+      const { likes, shares, comments } = content.metadata.engagement;
+      if (likes > 0 || shares > 0) {
+        const engagement = [];
+        if (likes > 0) engagement.push(`❤️ ${likes}`);
+        if (shares > 0) engagement.push(`🔄 ${shares}`);
+        if (comments > 0) engagement.push(`💬 ${comments}`);
+        parts.push(`**互动**: ${engagement.join(' ')}`);
+      }
+    }
+    
+    // 添加作者信息
+    if (content.author && content.metadata?.userHandle) {
+      parts.push(`**作者**: @${content.metadata.userHandle}`);
+    }
+    
+    // 添加媒体类型
+    if (content.metadata?.hasMedia) {
+      const mediaTypes = [];
+      if (content.metadata.mediaTypes?.hasImage) mediaTypes.push('图片');
+      if (content.metadata.mediaTypes?.hasVideo) mediaTypes.push('视频');
+      if (mediaTypes.length > 0) {
+        parts.push(`**媒体**: ${mediaTypes.join('、')}`);
+      }
+    }
+    
+    return parts.join(' | ');
+  }
+
+  /**
+   * 增强搜索发现描述
+   */
+  private enhanceGoogleDescription(content: SearchContent): string {
+    const parts = [`🔍 **搜索发现** - ${content.content}`];
+    
+    // 添加来源网站信息
+    if (content.url) {
+      try {
+        const domain = new URL(content.url).hostname;
+        parts.push(`**来源**: ${domain}`);
+      } catch (e) {
+        // URL解析失败，忽略
+      }
+    }
+    
+    // 添加时效性标记
+    if (content.timestamp) {
+      const hoursAgo = Math.floor((Date.now() - content.timestamp.getTime()) / (1000 * 60 * 60));
+      if (hoursAgo < 24) {
+        parts.push(`**时效**: 🔥 ${hoursAgo} 小时内发布`);
+      }
+    }
+    
+    return parts.join(' | ');
+  }
+
+  /**
+   * 确保中英文间空格格式
+   */
+  private formatChineseEnglishSpacing(text: string): string {
+    // 中文字符后跟英文字符，添加空格
+    text = text.replace(/([一-龯])([a-zA-Z0-9])/g, '$1 $2');
+    // 英文字符后跟中文字符，添加空格  
+    text = text.replace(/([a-zA-Z0-9])([一-龯])/g, '$1 $2');
+    // 清理多余的空格
+    text = text.replace(/\s+/g, ' ');
+    return text.trim();
+  }
+
+  /**
+   * 截断文本到指定长度（保留备用）
+   */
+  private truncateText(text: string, maxLength: number): string {
+    if (!text) return '';
+    if (text.length <= maxLength) return text;
+    return text.substring(0, maxLength - 3) + '...';
   }
 
   /**
@@ -1029,16 +1256,27 @@ ${input.filteredContents.length > 10 ? `... 另外还有 ${input.filteredContent
    * 备选简报生成
    */
   private generateFallbackNewsletter(input: NewsletterGeneratorInput): NewsletterGeneratorOutput {
-    console.log('⚠️ 使用备选简报生成策略');
+    console.log('⚠️ 使用备选简报生成策略 - 标准周刊格式');
+    console.log(`📊 输入内容数量: ${input.filteredContents.length}`);
 
-    // 简单的内容分组
+    // 按来源分组
     const bySource = {
       github: input.filteredContents.filter(c => c.source === 'github'),
-      twitter: input.filteredContents.filter(c => c.source === 'twitter'),
+      twitter: input.filteredContents.filter(c => c.source === 'twitter'), 
       google: input.filteredContents.filter(c => c.source === 'google')
     };
+    
+    console.log(`📈 分组统计: GitHub ${bySource.github.length}, Twitter ${bySource.twitter.length}, Google ${bySource.google.length}`);
 
-    const sections: NewsletterSection[] = [];
+    // 生成标准周刊格式
+    const weeklyContent = this.generateWeeklyMarkdown(input.filteredContents, input.strategy);
+    
+    const sections: NewsletterSection[] = [{
+      title: 'Creator Telescope 周刊',
+      type: 'weekly',
+      content: weeklyContent,
+      priority: 1
+    }];
 
     // 生成简单的摘要
     sections.push({

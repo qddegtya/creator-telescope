@@ -334,7 +334,7 @@ class ContentRankingTool implements Tool {
     maxResults?: number,
     diversityFactor?: number
   }) {
-    const { contents, assessments, maxResults = 50, diversityFactor = 0.3 } = args;
+    const { contents, assessments, maxResults = 100, diversityFactor = 0.3 } = args;
 
     console.log(`📊 开始内容排序: ${contents.length} 个内容，最大返回 ${maxResults} 个`);
 
@@ -719,20 +719,18 @@ export class QualityFilterAgent extends Agent {
     if (input.twitterResults?.contents) allContents.push(...input.twitterResults.contents);
     if (input.githubResults?.contents) allContents.push(...input.githubResults.contents);
     
-    // 简单的基于时间和来源的筛选
+    // 最小化过滤，保留更多内容
     const filteredContents = allContents
       .filter(content => {
-        // 放宽时效性检查 - 7天内的内容都可接受
-        const hoursDiff = (Date.now() - content.timestamp.getTime()) / (1000 * 60 * 60);
-        if (hoursDiff > 168) return false; // 超过 7 天的内容
-
-        // 基本质量检查
-        if (!content.content || content.content.length < 10) return false; // 内容不能为空且不能太短
+        // 只做最基本的有效性检查
+        if (!content.content) return false; // 内容不能为空
+        if (!content.title) return false; // 标题不能为空
+        if (!content.url) return false; // 链接不能为空
         
         return true;
       })
       .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime()) // 按时间排序
-      .slice(0, 50); // 限制数量
+      // .slice(0, 100); // 大幅增加数量限制
 
     return {
       filteredContents,

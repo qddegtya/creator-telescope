@@ -1,6 +1,6 @@
 import { Component } from '@astack-tech/core';
 import { SearchContent, GoogleSearchTask, GoogleSearchResult } from '../types/multi-agent.js';
-import { BrowserPool } from '../infrastructure/browser-pool.js';
+import { BrowserPool, PageLease } from '../infrastructure/browser-pool.js';
 
 /**
  * Google 搜索 Agent
@@ -13,14 +13,14 @@ export class GoogleSearchAgent extends Component {
   constructor(browserPool?: BrowserPool) {
     super({});
     this.browserPool = browserPool || new BrowserPool({
-      maxConcurrent: 3,
-      headless: false, // 改为可视化模式便于调试
-      timeout: 30000
+      maxInstances: 3,
+      headless: true, // Google搜索使用headless模式，无需人工干预
+      pageTimeout: 30000
     });
 
-    // 配置端口
-    Component.Port.I('in').attach(this);
-    Component.Port.O('out').attach(this);
+    // 配置端口 - 与Twitter Agent保持一致
+    Component.Port.I('task').attach(this);
+    Component.Port.O('result').attach(this);
   }
 
   /**
@@ -39,11 +39,14 @@ export class GoogleSearchAgent extends Component {
 
       for (const result of results) {
         if (result.status === 'fulfilled') {
+          console.log(`✅ Google 搜索成功: ${result.value.length} 个结果`);
           contents.push(...result.value);
         } else {
-          console.warn('Google 搜索失败:', result.reason);
+          console.warn('❌ Google 搜索失败:', result.reason);
         }
       }
+
+      console.log(`🔍 Google 搜索汇总: 总共收集到 ${contents.length} 个原始结果`);
 
       // 按时间排序 (最新的在前)
       const sortedContents = contents.sort((a, b) => {
@@ -54,6 +57,8 @@ export class GoogleSearchAgent extends Component {
 
       // 限制结果数量
       const limitedContents = sortedContents.slice(0, task.maxResults || 10);
+
+      console.log(`🔍 Google 搜索最终结果: ${limitedContents.length}/${sortedContents.length} 个结果将返回`);
 
       return {
         agentType: 'google',
@@ -98,10 +103,11 @@ export class GoogleSearchAgent extends Component {
    * 执行单个搜索查询
    */
   private async performSingleSearch(query: string, task: GoogleSearchTask): Promise<SearchContent[]> {
-    const browser = await this.browserPool.acquire();
+    let lease: PageLease | null = null;
     
     try {
-      const page = await browser.newPage();
+      lease = await this.browserPool.leasePage(task.timeoutMs || 60000);
+      const page = lease.page;
       
       // 设置反爬虫措施
       await this.setupAntiDetection(page);
@@ -132,15 +138,17 @@ export class GoogleSearchAgent extends Component {
 
       // 提取搜索结果
       const results = await this.extractSearchResults(page, query, task);
+      console.log(`🔍 单个查询 "${query}" 提取到 ${results.length} 个结果`);
 
-      await page.close();
       return results;
 
     } catch (error) {
       console.error(`Google 搜索查询失败 [${query}]:`, error);
       return [];
     } finally {
-      this.browserPool.release(browser);
+      if (lease) {
+        await this.browserPool.returnPage(lease.id);
+      }
     }
   }
 
@@ -148,9 +156,6 @@ export class GoogleSearchAgent extends Component {
    * 设置反检测措施
    */
   private async setupAntiDetection(page: any): Promise<void> {
-    // 设置随机 User Agent
-    await page.setUserAgent(this.getRandomUserAgent());
-    
     // 设置随机视口
     const viewports = [
       { width: 1920, height: 1080 },
@@ -161,8 +166,9 @@ export class GoogleSearchAgent extends Component {
     const viewport = viewports[Math.floor(Math.random() * viewports.length)];
     await page.setViewportSize(viewport);
 
-    // 设置额外的请求头
+    // 设置额外的请求头（包含随机User Agent）
     await page.setExtraHTTPHeaders({
+      'User-Agent': this.getRandomUserAgent(),
       'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
       'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
       'Accept-Encoding': 'gzip, deflate, br',
@@ -263,7 +269,7 @@ export class GoogleSearchAgent extends Component {
    * 提取搜索结果
    */
   private async extractSearchResults(page: any, query: string, task: GoogleSearchTask): Promise<SearchContent[]> {
-    return await page.evaluate((query: string, timeWindow: string) => {
+    return await page.evaluate((query: string) => {
       const results: any[] = [];
       
       // 尝试多种选择器，适应Google的不同版本
@@ -395,9 +401,10 @@ export class GoogleSearchAgent extends Component {
         });
       }
 
-      console.log(`Google搜索提取完成: 找到 ${results.length} 个有效结果`);
+      console.log(`🔍 Google搜索提取完成: 找到 ${results.length} 个有效结果`);
+      console.log(`🔍 Google搜索结果预览:`, results.slice(0, 3).map(r => ({ title: r.title, url: r.url })));
       return results;
-    }, query, task.timeRange || '');
+    }, query);
   }
 
   /**
@@ -512,6 +519,66 @@ export class GoogleSearchAgent extends Component {
     ];
     
     return userAgents[Math.floor(Math.random() * userAgents.length)];
+  }
+
+  /**
+   * 独立运行组件
+   */
+  async run(task: GoogleSearchTask): Promise<GoogleSearchResult> {
+    if (!task.enabled) {
+      console.log('⏭️ Google Search Agent 已禁用，跳过执行');
+      return {
+        agentType: 'google',
+        executionTime: 0,
+        success: true,
+        contents: [],
+        metadata: {
+          totalFound: 0,
+          processedCount: 0,
+          filteredCount: 0,
+          timestamp: new Date()
+        }
+      };
+    }
+
+    return await this.executeSearch(task);
+  }
+
+  /**
+   * Component 数据转换逻辑
+   */
+  _transform($i: any, $o: any): void {
+    $i('task').receive(async (task: GoogleSearchTask) => {
+      try {
+        console.log(`[GoogleSearchAgent] 开始处理搜索任务`);
+        
+        const result = await this.run(task);
+        
+        console.log(`[GoogleSearchAgent] 搜索完成，返回 ${result.contents?.length || 0} 个结果`);
+        $o('result').send(result);
+        
+      } catch (error) {
+        console.error(
+          `[GoogleSearchAgent] 处理失败: ${error instanceof Error ? error.message : String(error)}`
+        );
+        
+        const errorResult: GoogleSearchResult = {
+          agentType: 'google',
+          executionTime: 0,
+          success: false,
+          error: error instanceof Error ? error.message : String(error),
+          contents: [],
+          metadata: {
+            totalFound: 0,
+            processedCount: 0,
+            filteredCount: 0,
+            timestamp: new Date()
+          }
+        };
+        
+        $o('result').send(errorResult);
+      }
+    });
   }
 
   /**

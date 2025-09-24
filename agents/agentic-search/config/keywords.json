@@ -69,17 +69,17 @@
       ],
       "filters": {
         "language": ["TypeScript", "Python", "JavaScript", "Go", "Rust"],
-        "minStars": 10,
-        "pushedAfter": "2024-08-01"
+        "minStars": 5,
+        "pushedAfter": "2024-01-01"
       }
     }
   },
   "quality": {
-    "minCredibilityScore": 0.7,
-    "minRelevanceScore": 0.8,
-    "maxAge": "24h",
-    "requiredKeywords": ["agent", "ai", "framework", "autonomous"],
-    "excludeKeywords": ["spam", "advertisement", "promotion"]
+    "minCredibilityScore": 0.3,
+    "minRelevanceScore": 0.5,
+    "maxAge": "168h",
+    "requiredKeywords": [],
+    "excludeKeywords": []
   },
   "performance": {
     "maxConcurrentSearches": 5,

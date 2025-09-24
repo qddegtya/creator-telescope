@@ -61,6 +61,11 @@ export interface BrowserPoolConfig {
   incognito: boolean;
   
   /**
+   * 是否启用headless模式
+   */
+  headless: boolean;
+  
+  /**
    * 反爬虫配置
    */
   antiCrawling: {
@@ -122,6 +127,7 @@ export class BrowserPool extends Component {
       idleTimeout: 600000, // 10 分钟 - 增加闲置超时
       pageTimeout: 300000, // 5 分钟 - 大幅增加页面超时，适应Browser Use Agent和HILT
       incognito: true,
+      headless: false, // 默认非headless模式，适用于需要人工干预的场景
       antiCrawling: {
         userAgentRotation: true,
         requestDelayRange: [1000, 3000],
@@ -216,12 +222,12 @@ export class BrowserPool extends Component {
     console.log('🚀 创建新的浏览器实例...');
 
     try {
-      // 浏览器启动选项 - 可视化模式便于调试和干预
+      // 浏览器启动选项 - 根据配置决定headless模式
       const launchOptions: any = {
-        headless: false,         // 改为可视化模式
-        slowMo: 50,             // 略微减慢操作速度，便于观察
+        headless: this.config.headless,
+        slowMo: this.config.headless ? 0 : 50, // headless模式下不需要slowMo
         args: [
-          '--start-maximized',    // 最大化窗口
+          ...(this.config.headless ? [] : ['--start-maximized']), // 只在非headless模式下最大化窗口
           '--no-sandbox',
           '--disable-setuid-sandbox',
           '--disable-dev-shm-usage',

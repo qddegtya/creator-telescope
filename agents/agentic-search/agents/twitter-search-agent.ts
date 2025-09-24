@@ -1667,11 +1667,31 @@ export class TwitterSearchAgent extends Component {
           try {
             const tweet = tweetElements[i];
             
-            // 提取文本内容
+            // 提取文本内容 - 确保完整性
             const textElement = tweet.querySelector('[data-testid="tweetText"]');
-            const content = textElement?.textContent?.trim() || '';
+            let content = textElement?.textContent?.trim() || '';
             
             if (!content || content.length < 10) continue;
+            
+            // 提取并保留推文中的结构化信息
+            const mentions = Array.from(tweet.querySelectorAll('[data-testid="tweetText"] a[href*="/"]'))
+              .map(el => el.textContent?.trim())
+              .filter(text => text && text.startsWith('@'))
+              .slice(0, 3);
+              
+            const hashtags = Array.from(tweet.querySelectorAll('[data-testid="tweetText"] a[href*="/hashtag/"]'))
+              .map(el => el.textContent?.trim())
+              .filter(text => text && text.startsWith('#'))
+              .slice(0, 5);
+            
+            // 如果内容被截断，尝试获取更完整的文本
+            if (content.length > 0) {
+              // 检查是否有展开按钮或更多内容
+              const expandedText = tweet.querySelector('[data-testid="tweetText"] span')?.textContent?.trim();
+              if (expandedText && expandedText.length > content.length) {
+                content = expandedText;
+              }
+            }
             
             // 提取用户信息
             const userNameElement = tweet.querySelector('[data-testid="User-Name"] a');
@@ -1696,12 +1716,18 @@ export class TwitterSearchAgent extends Component {
               continue;
             }
             
-            // 提取链接
+            // 提取链接 - 保留更多链接信息
             const linkElements = tweet.querySelectorAll('a[href*="//"]');
-            const urls = Array.from(linkElements)
+            const allUrls = Array.from(linkElements)
               .map(link => (link as HTMLAnchorElement).href)
-              .filter(url => url && !url.includes('twitter.com') && !url.includes('t.co'))
-              .slice(0, 3);
+              .filter(url => url && url.startsWith('http'));
+              
+            // 分类链接：外部链接优先，但保留所有有效链接
+            const externalUrls = allUrls.filter(url => !url.includes('twitter.com') && !url.includes('x.com'));
+            const twitterUrls = allUrls.filter(url => url.includes('twitter.com') || url.includes('x.com'));
+            
+            // 保留所有有效链接，外部链接排在前面
+            const urls = [...externalUrls, ...twitterUrls].slice(0, 5);
             
             // 检查是否为转发
             const isRetweet = tweet.querySelector('[data-testid="socialContext"]')?.textContent?.includes('Retweeted') || false;
@@ -1719,6 +1745,8 @@ export class TwitterSearchAgent extends Component {
               retweets,
               replies,
               urls,
+              mentions,
+              hashtags,
               isRetweet,
               hasImage,
               hasVideo,
@@ -1733,29 +1761,55 @@ export class TwitterSearchAgent extends Component {
         return tweets;
       }, { keyword, minLikes: task.engagement.minLikes, minRetweets: task.engagement.minRetweets });
 
-      // 转换为 SearchContent 格式
-      const searchContents: SearchContent[] = results.map(tweet => ({
-        id: this.generateContentId(tweet),
-        title: this.generateTweetTitle(tweet.content),
-        content: tweet.content,
-        url: tweet.urls[0] || `https://twitter.com/${tweet.userHandle}`,
-        source: 'twitter',
-        timestamp: new Date(tweet.timestamp),
-        metadata: {
-          author: tweet.userDisplayName || tweet.userHandle,
-          platform: 'twitter',
-          tags: this.extractHashtagsFromText(tweet.content),
-          engagement: {
-            likes: tweet.likes,
-            shares: tweet.retweets,
-            comments: tweet.replies
-          },
-          userHandle: tweet.userHandle,
-          isRetweet: tweet.isRetweet,
-          hasMedia: tweet.hasImage || tweet.hasVideo,
-          externalUrls: tweet.urls
+      // 转换为 SearchContent 格式 - 增强内容完整性
+      const searchContents: SearchContent[] = results.map(tweet => {
+        // 构建完整的推文内容，包含链接信息
+        let enhancedContent = tweet.content;
+        
+        // 如果有外部链接，在内容末尾添加链接信息
+        if (tweet.urls && tweet.urls.length > 0) {
+          const linkSection = tweet.urls.map(url => `🔗 ${url}`).join('\n');
+          enhancedContent += `\n\n${linkSection}`;
         }
-      }));
+        
+        // 如果有提及的用户，添加到内容中
+        if (tweet.mentions && tweet.mentions.length > 0) {
+          enhancedContent += `\n\n👤 提及: ${tweet.mentions.join(' ')}`;
+        }
+        
+        return {
+          id: this.generateContentId(tweet),
+          title: this.generateTweetTitle(tweet.content),
+          content: enhancedContent,
+          url: tweet.urls.find(url => !url.includes('twitter.com') && !url.includes('x.com')) || 
+               tweet.urls[0] || 
+               `https://x.com/${tweet.userHandle}`,
+          source: 'twitter',
+          timestamp: new Date(tweet.timestamp),
+          author: tweet.userDisplayName || tweet.userHandle,
+          metadata: {
+            author: tweet.userDisplayName || tweet.userHandle,
+            platform: 'twitter',
+            tags: [...(tweet.hashtags || []), ...this.extractHashtagsFromText(tweet.content)],
+            engagement: {
+              likes: tweet.likes,
+              shares: tweet.retweets,
+              comments: tweet.replies
+            },
+            userHandle: tweet.userHandle,
+            mentions: tweet.mentions || [],
+            isRetweet: tweet.isRetweet,
+            hasMedia: tweet.hasImage || tweet.hasVideo,
+            mediaTypes: {
+              hasImage: tweet.hasImage,
+              hasVideo: tweet.hasVideo
+            },
+            allUrls: tweet.urls || [],
+            externalUrls: tweet.urls?.filter(url => !url.includes('twitter.com') && !url.includes('x.com')) || [],
+            tweetUrl: `https://x.com/${tweet.userHandle}`
+          }
+        };
+      });
 
       // 过滤和验证结果
       const filteredResults = searchContents.filter(content => 

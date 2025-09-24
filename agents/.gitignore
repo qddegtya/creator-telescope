@@ -210,3 +210,6 @@ $RECYCLE.BIN/
 # Linux specific files
 *~
 .directory
+
+# build output
+output/

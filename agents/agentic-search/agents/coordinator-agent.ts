@@ -75,7 +75,7 @@ class TaskDistributionTool implements Tool {
     // 确保策略对象有必要的属性
     const searchTargets = strategy.searchTargets || ['google', 'twitter', 'github'];
     const expandedKeywords = strategy.expandedKeywords || strategy.keywordExpansions || keywords;
-    const maxResults = strategy.maxResults || { google: 10, twitter: 8, github: 5 };
+    const maxResults = strategy.maxResults || { google: 50, twitter: 40, github: 30 };
     const optimizedQueries = strategy.optimizedQueries || {
       google: keywords,
       twitter: keywords,
