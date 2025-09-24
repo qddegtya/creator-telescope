@@ -106,7 +106,7 @@ export class MultiAgentSearchPipeline extends Pipeline {
   private initializeAgents(): void {
     // 创建 Agent 实例
     this.coordinatorAgent = new CoordinatorAgent();
-    this.googleSearchAgent = new GoogleSearchAgent();
+    this.googleSearchAgent = new GoogleSearchAgent(this.browserPool);
     this.twitterSearchAgent = new TwitterSearchAgent(this.browserPool);
     this.githubSearchAgent = new GitHubSearchAgent();
     this.qualityFilterAgent = new QualityFilterAgent();

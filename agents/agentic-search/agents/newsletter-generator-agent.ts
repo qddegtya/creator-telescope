@@ -737,7 +737,7 @@ export class NewsletterGeneratorAgent extends Agent {
 - 交互式内容链接
 
 你的任务是创造有价值、易读、专业的 AI 技术新闻简报。`,
-      maxIterations: 4,
+      maxIterations: 6, // 增加迭代次数
       verbose: true
     };
 
@@ -789,7 +789,7 @@ ${input.filteredContents.length > 10 ? `... 另外还有 ${input.filteredContent
       const agentOutput = await Promise.race([
         super.run(userMessage),
         new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Newsletter Agent 执行超时')), 60000) // 60秒超时
+          setTimeout(() => reject(new Error('Newsletter Agent 执行超时')), 180000) // 增加到3分钟超时
         )
       ]) as any;
       

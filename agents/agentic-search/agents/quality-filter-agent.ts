@@ -722,12 +722,12 @@ export class QualityFilterAgent extends Agent {
     // 简单的基于时间和来源的筛选
     const filteredContents = allContents
       .filter(content => {
-        // 时效性检查
+        // 放宽时效性检查 - 7天内的内容都可接受
         const hoursDiff = (Date.now() - content.timestamp.getTime()) / (1000 * 60 * 60);
-        if (hoursDiff > 48) return false; // 超过 48 小时的内容
+        if (hoursDiff > 168) return false; // 超过 7 天的内容
 
         // 基本质量检查
-        if (content.content.length < 50) return false; // 内容太短
+        if (!content.content || content.content.length < 10) return false; // 内容不能为空且不能太短
         
         return true;
       })

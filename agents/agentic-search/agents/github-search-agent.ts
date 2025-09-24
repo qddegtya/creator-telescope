@@ -176,13 +176,13 @@ export class GitHubSearchAgent extends Component {
           break;
         }
 
-        // 执行搜索，带限流处理
+        // 执行搜索，带限流处理 - 增加结果数量
         const response = await this.executeWithRateLimit(async () => {
           return await this.octokit.rest.search.repos({
             q: query,
             sort: 'updated',
             order: 'desc',
-            per_page: Math.min(task.maxResults, 100)
+            per_page: Math.min(task.maxResults * 3, 100) // 增加搜索结果以便过滤
           });
         });
 
@@ -331,12 +331,19 @@ export class GitHubSearchAgent extends Component {
       queryParts.push(`stars:>=${task.filters.minStars}`);
     }
 
-    // 更新时间过滤 - 使用更宽松的时间范围
-    if (task.filters?.maxAge) {
+    // 更新时间过滤 - 优先使用pushedAfter，fallback到maxAge
+    if (task.filters?.pushedAfter) {
+      queryParts.push(`pushed:>=${task.filters.pushedAfter}`);
+    } else if (task.filters?.maxAge) {
       const timeFilter = this.convertAgeToDate(task.filters.maxAge);
       if (timeFilter) {
         queryParts.push(`pushed:>=${timeFilter.toISOString().split('T')[0]}`);
       }
+    } else {
+      // 默认只搜索最近6个月的项目，确保时效性
+      const sixMonthsAgo = new Date();
+      sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+      queryParts.push(`pushed:>=${sixMonthsAgo.toISOString().split('T')[0]}`);
     }
 
     // 排除 fork 仓库

@@ -10,13 +10,17 @@ import { BrowserPool } from '../infrastructure/browser-pool.js';
 export class GoogleSearchAgent extends Component {
   private browserPool: BrowserPool;
 
-  constructor() {
-    super();
-    this.browserPool = new BrowserPool({
+  constructor(browserPool?: BrowserPool) {
+    super({});
+    this.browserPool = browserPool || new BrowserPool({
       maxConcurrent: 3,
-      headless: true,
+      headless: false, // 改为可视化模式便于调试
       timeout: 30000
     });
+
+    // 配置端口
+    Component.Port.I('in').attach(this);
+    Component.Port.O('out').attach(this);
   }
 
   /**

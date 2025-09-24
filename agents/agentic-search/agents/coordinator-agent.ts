@@ -45,7 +45,7 @@ class StrategyAnalysisTool implements Tool {
       },
       recommendedPriority: preferences.depth === 'deep' ? 'quality' : 'speed',
       suggestedExpansions: [
-        ...keywords.map(k => `${k} 2024`),
+        ...keywords.map(k => `${k} 2025`),
         ...keywords.map(k => `${k} latest`),
         ...(isTechFocused ? keywords.map(k => `${k} framework`) : []),
         ...(isNewsFocused ? keywords.map(k => `${k} news`) : [])
