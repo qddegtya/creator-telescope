@@ -24,10 +24,19 @@ export class TwitterSearchAgent extends Component {
     lastLoginTime: 0,
     sessionDuration: 30 * 60 * 1000 // 30分钟会话有效期
   };
+  
+  // Twitter会话目录路径
+  private readonly twitterSessionDir = './tmp/twitter-session';
+  
+  // 会话状态标记
+  private hasValidSession = false;
 
   constructor(browserPool: BrowserPool) {
     super({});
     this.browserPool = browserPool;
+    
+    // 检查是否存在会话目录
+    this.checkExistingSession();
     
     // 延迟初始化BrowserUseAgent，在需要时才创建
     this.browserUseAgent = null;
@@ -56,12 +65,26 @@ export class TwitterSearchAgent extends Component {
     let lease: PageLease | null = null;
 
     try {
-      // 从浏览器池租借页面
-      lease = await this.browserPool.leasePage(task.timeoutMs);
+      // 从浏览器池租借页面 - Twitter需要使用共享会话目录
+      const twitterTimeout = Math.max(task.timeoutMs || 120000, 300000); // 至少5分钟
+      
+      // 如果有共享会话，需要用特殊方式创建浏览器
+      if (this.hasValidSession) {
+        lease = await this.createSharedSessionPage(twitterTimeout);
+      } else {
+        lease = await this.browserPool.leasePage(twitterTimeout);
+      }
+      
       const page = lease.page;
 
       // 配置页面以适应 Twitter
       await this.configurePageForTwitter(page);
+      
+      // 检查是否有共享会话数据
+      if (this.hasValidSession) {
+        console.log('🍪 检测到共享会话目录，验证登录状态...');
+        await this.checkSharedSessionStatus(page);
+      }
 
       // 预先检查并确保已登录 Twitter
       console.log('🔐 检查 Twitter 登录状态...');
@@ -73,6 +96,38 @@ export class TwitterSearchAgent extends Component {
         }
       } else {
         console.log('✅ Twitter 登录状态有效');
+      }
+      
+      // 额外检查：如果有共享会话目录，重新验证实际浏览器登录状态
+      if (this.hasValidSession) {
+        console.log('🔍 验证共享会话的实际登录状态...');
+        
+        // 导航到Twitter主页来检查登录状态
+        try {
+          await page.goto('https://x.com', { waitUntil: 'domcontentloaded', timeout: 15000 });
+          await page.waitForTimeout(2000);
+          
+          const actualLoginStatus = await this.checkLoginSuccess(page);
+          console.log(`📊 实际浏览器登录状态: ${actualLoginStatus ? '✅ 已登录' : '❌ 未登录'}`);
+          
+          if (actualLoginStatus) {
+            // 实际已登录，同步内存状态
+            console.log('🔄 同步登录状态到内存...');
+            this.loginState.isLoggedIn = true;
+            this.loginState.lastLoginTime = Date.now();
+            this.loginState.loginAttempts = 0;
+          } else {
+            console.log('⚠️ 共享会话已过期，清理会话状态...');
+            this.hasValidSession = false;
+            this.resetLoginState();
+            await this.clearSessionDirectory();
+          }
+        } catch (error) {
+          console.warn('⚠️ 验证共享会话状态时出错:', error);
+          // 出错时保守处理，假设需要重新登录
+          this.hasValidSession = false;
+          this.resetLoginState();
+        }
       }
 
       // 执行搜索查询
@@ -158,6 +213,23 @@ export class TwitterSearchAgent extends Component {
               // 反爬虫延迟
               await page.waitForTimeout(Math.random() * 3000 + 2000);
 
+              // 检查当前页面状态
+              const finalUrl = page.url();
+              console.log(`📍 搜索后页面URL: ${finalUrl}`);
+              
+              // 检查页面是否有登录提示
+              if (finalUrl.includes('login') || finalUrl.includes('i/flow')) {
+                console.warn('⚠️ 页面重定向到登录页面，会话可能无效');
+                throw new Error('页面需要登录，会话无效');
+              }
+              
+              // 检查页面基本内容
+              const pageTitle = await page.title().catch(() => 'N/A');
+              console.log(`📄 页面标题: ${pageTitle}`);
+              
+              // 确保切换到"最新"标签以获取推文结果
+              await this.ensureLatestTab(page);
+              
               // 滚动加载更多内容
               await this.scrollToLoadMoreTweets(page);
 
@@ -397,9 +469,17 @@ export class TwitterSearchAgent extends Component {
         await page.waitForTimeout(5000);
         
         const currentUrl = page.url();
-        const isLoggedIn = currentUrl.includes('home') || 
-                          currentUrl === 'https://x.com/' ||
-                          await page.locator('[data-testid="SideNav_AccountSwitcher_Button"]').isVisible().catch(() => false);
+        console.log(`🔍 登录后页面URL: ${currentUrl}`);
+        
+        // 详细检查登录状态
+        const urlCheck = currentUrl.includes('home') || currentUrl === 'https://x.com/';
+        const sideNavCheck = await page.locator('[data-testid="SideNav_AccountSwitcher_Button"]').isVisible().catch(() => false);
+        
+        console.log(`📊 登录状态检查:`);
+        console.log(`   URL检查: ${urlCheck ? '✅' : '❌'} (${currentUrl})`);
+        console.log(`   侧边栏检查: ${sideNavCheck ? '✅' : '❌'}`);
+        
+        const isLoggedIn = urlCheck || sideNavCheck;
 
         if (isLoggedIn) {
           console.log('✅ 智能 Twitter 登录成功');
@@ -447,11 +527,11 @@ export class TwitterSearchAgent extends Component {
   }
 
   /**
-   * 使用Browser Use Agent执行智能登录 - AStack独立运行模式
+   * 使用Browser Use Agent执行智能登录 - 支持HILT (Human In The Loop)
    */
   private async performSmartLogin(page: any, credentials: { username: string; password: string; email?: string }): Promise<boolean> {
     try {
-      console.log('🤖 使用Browser Use Agent进行智能登录...');
+      console.log('🤖 使用Browser Use Agent进行智能登录（支持人工干预）...');
       
       // 先初始化Agent
       const browserAgent = await this.initBrowserUseAgent();
@@ -459,13 +539,20 @@ export class TwitterSearchAgent extends Component {
       // 关键：设置page上下文到Browser Use Agent
       (browserAgent as any).currentPage = page;
       
-      // AStack独立运行模式 - 直接调用agent.run()
+      // HILT增强的登录任务
       const loginTask = `请帮我登录Twitter账户。步骤如下：
 1. 使用get_page_snapshot()分析当前页面，找到用户名输入框
 2. 使用type_text()在用户名输入框中输入：${credentials.username}
 3. 点击下一步按钮（如果存在）
 4. 找到密码输入框，使用type_text()输入密码
 5. 点击登录按钮完成登录
+
+如果遇到以下情况，请提示需要人工干预：
+- 出现验证码（CAPTCHA）
+- 需要短信或邮件验证
+- 页面出现安全检查
+- 任何无法自动处理的情况
+
 请确保每个步骤之间有适当的等待时间。`;
 
       // 创建输入，包含页面上下文
@@ -478,17 +565,12 @@ export class TwitterSearchAgent extends Component {
         context: { page }
       };
 
-      // 独立运行Browser Use Agent
-      const result = await browserAgent.agent.run(input);
+      // 尝试自动登录，支持多轮交互
+      const result = await this.performLoginWithHILT(browserAgent, input, page);
       
       console.log('📝 Browser Use Agent 登录结果:', result);
       
-      // 简单验证是否成功
-      if (result && result.message) {
-        return true;
-      }
-      
-      return false;
+      return result;
       
     } catch (error) {
       console.error('❌ Smart login error:', error);
@@ -496,6 +578,929 @@ export class TwitterSearchAgent extends Component {
     }
   }
 
+  /**
+   * 执行支持HILT的登录过程
+   */
+  private async performLoginWithHILT(browserAgent: any, input: any, page: any): Promise<boolean> {
+    const maxIterations = 15; // 允许更多迭代，应对复杂登录流程
+    let currentIteration = 0;
+    let lastAgentOutput: any = null;
+
+    while (currentIteration < maxIterations) {
+      currentIteration++;
+      console.log(`🔄 登录迭代 ${currentIteration}/${maxIterations}`);
+
+      try {
+        // 检查页面是否仍然有效
+        if (page.isClosed && page.isClosed()) {
+          console.error('❌ 页面已关闭，无法继续登录');
+          break;
+        }
+
+        // 运行Browser Use Agent
+        const result = await browserAgent.agent.run(input);
+        lastAgentOutput = result;
+
+        // 检查是否需要人工干预
+        if (this.needsHumanIntervention(result, page)) {
+          console.log('🙋 检测到需要人工干预的情况');
+          
+          // 启动HILT模式
+          const humanResult = await this.requestHumanIntervention(page, result);
+          
+          if (humanResult.action === 'continue') {
+            // 人工处理完成，继续自动化
+            input.messages.push({
+              role: 'assistant',
+              content: result.message || 'Attempted login step'
+            });
+            input.messages.push({
+              role: 'user', 
+              content: '人工干预已完成，请继续登录流程。'
+            });
+            continue;
+          } else if (humanResult.action === 'success') {
+            // 人工确认登录成功
+            return true;
+          } else {
+            // 人工放弃
+            console.log('❌ 用户选择放弃登录');
+            return false;
+          }
+        }
+
+        // 检查登录是否成功
+        const isLoggedIn = await this.checkLoginSuccess(page);
+        if (isLoggedIn) {
+          console.log('✅ 自动登录成功');
+          return true;
+        }
+
+        // 准备下一轮迭代的输入
+        if (result && result.message) {
+          input.messages.push({
+            role: 'assistant',
+            content: result.message
+          });
+          input.messages.push({
+            role: 'user',
+            content: '请继续下一步登录操作，或者告诉我是否需要人工干预。'
+          });
+        }
+
+        // 等待一段时间再继续
+        await page.waitForTimeout(2000);
+
+      } catch (error) {
+        console.error(`❌ 迭代 ${currentIteration} 失败:`, error);
+        
+        // 如果是网络错误或页面错误，可能需要人工干预
+        const humanResult = await this.requestHumanIntervention(page, { 
+          error: error instanceof Error ? error.message : String(error),
+          needsHuman: true 
+        });
+        
+        if (humanResult.action !== 'continue') {
+          return humanResult.action === 'success';
+        }
+      }
+    }
+
+    console.warn('⚠️ 登录迭代达到上限，尝试最后一次人工干预');
+    const finalHumanResult = await this.requestHumanIntervention(page, lastAgentOutput);
+    return finalHumanResult.action === 'success';
+  }
+
+  /**
+   * 检查是否需要人工干预
+   */
+  private needsHumanIntervention(agentResult: any, page: any): boolean {
+    if (!agentResult) return false; // 改为false，避免无结果时触发HILT
+
+    const message = agentResult.message || '';
+    const error = agentResult.error || '';
+    
+    // 排除明显的技术错误，这些不需要人工干预
+    const technicalErrors = [
+      'require is not defined',
+      'timeout',
+      'net::err_timed_out',
+      'net::err_connection_closed',
+      'navigation is interrupted',
+      'target page.*has been closed'
+    ];
+
+    // 如果是技术错误，不需要人工干预
+    if (technicalErrors.some(techError => 
+      message.toLowerCase().includes(techError.toLowerCase()) || 
+      error.toLowerCase().includes(techError.toLowerCase())
+    )) {
+      return false;
+    }
+
+    // 只有这些情况才需要人工干预
+    const needsHumanKeywords = [
+      'captcha', 'verification code', 'verify your identity', '验证码',
+      'security check', '安全检查', 'suspicious activity', '可疑活动',
+      'phone number', 'email verification', '手机验证', '邮箱验证'
+    ];
+
+    return needsHumanKeywords.some(keyword => 
+      message.toLowerCase().includes(keyword.toLowerCase()) ||
+      error.toLowerCase().includes(keyword.toLowerCase())
+    );
+  }
+
+  /**
+   * 请求人工干预 - 支持临时显示浏览器
+   */
+  private async requestHumanIntervention(page: any, context: any): Promise<{action: 'continue' | 'success' | 'abort'}> {
+    console.log('\n' + '='.repeat(60));
+    console.log('🙋 需要人工干预 - Twitter登录');
+    console.log('='.repeat(60));
+    console.log('当前情况:', context?.message || context?.error || '自动登录遇到问题');
+    
+    try {
+      console.log('页面URL:', page.url());
+    } catch (e) {
+      console.log('页面URL: 无法获取（页面已关闭）');
+    }
+    
+    console.log('\n🤖 检测到需要人工处理的登录问题！');
+    console.log('👀 浏览器已在可视化模式打开，您可以直接在浏览器中操作！');
+    console.log('='.repeat(60));
+
+    // 可视化浏览器的HILT处理
+    return this.handleVisualBrowserHILT(page, context);
+  }
+
+  /**
+   * 可视化浏览器的HILT处理 - 简化的用户交互
+   */
+  private async handleVisualBrowserHILT(page: any, context?: any): Promise<{ action: string }> {
+    try {
+      console.log('🔍 分析当前页面状态...');
+      
+      // 获取基本页面信息
+      const pageInfo = {
+        url: page.url(),
+        title: await page.title().catch(() => 'N/A')
+      };
+      
+      console.log(`📄 当前页面: ${pageInfo.title}`);
+      console.log(`🔗 URL: ${pageInfo.url}`);
+      
+      // 智能分析页面，给出简化的指导
+      let guidance = this.getSimplePageGuidance(pageInfo, context);
+      
+      console.log('\n' + '='.repeat(50));
+      console.log('📋 操作指导:');
+      console.log(guidance);
+      console.log('='.repeat(50));
+      
+      // 简单的用户确认
+      const response = await this.getSimpleUserConfirmation();
+      
+      if (response === 'success') {
+        console.log('✅ 用户确认操作成功');
+        return { action: 'success' };
+      } else if (response === 'continue') {
+        console.log('🔄 用户请求继续自动化流程');
+        return { action: 'continue' };
+      } else {
+        console.log('⏹️ 用户选择中止');
+        return { action: 'abort' };
+      }
+      
+    } catch (error) {
+      console.error('❌ Visual HITL处理失败:', error);
+      return { action: 'abort' };
+    }
+  }
+
+  /**
+   * AI辅助的终端HILT处理（保留备用）
+   */
+  private async handleTerminalHILT(page: any, context?: any): Promise<{ action: string }> {
+    try {
+      console.log('🔍 分析页面内容...');
+      
+      // 获取页面信息
+      const pageInfo = {
+        url: page.url(),
+        title: await page.title().catch(() => 'N/A'),
+        html: await page.content().catch(() => ''),
+      };
+      
+      console.log(`📄 当前页面: ${pageInfo.title}`);
+      console.log(`🔗 URL: ${pageInfo.url}`);
+      
+      // 使用AI分析页面并识别需要的信息
+      const analysis = await this.analyzePageForHILT(page, context);
+      
+      if (!analysis.needsInput) {
+        console.log('✅ 页面不需要额外输入，尝试自动处理...');
+        return await this.autoHandlePage(page);
+      }
+      
+      console.log('\n📋 AI分析结果:');
+      console.log(`🎯 检测到的问题: ${analysis.issue}`);
+      console.log(`📝 需要的信息: ${analysis.requiredInputs.join(', ')}`);
+      
+      // 从用户获取信息
+      const userInputs = await this.getUserInputsFromTerminal(analysis.requiredInputs);
+      
+      // 使用AI自动填写信息
+      console.log('🤖 AI自动填写信息...');
+      const fillResult = await this.autoFillWithUserInputs(page, userInputs, analysis);
+      
+      if (fillResult.success) {
+        console.log('✅ 信息填写成功，尝试提交...');
+        const submitResult = await this.autoSubmitForm(page);
+        return { action: submitResult.success ? 'success' : 'retry' };
+      } else {
+        console.log('❌ 信息填写失败:', fillResult.error);
+        return { action: 'abort' };
+      }
+      
+    } catch (error) {
+      console.error('❌ Terminal HILT处理失败:', error);
+      return { action: 'abort' };
+    }
+  }
+
+  /**
+   * 分析页面内容，识别HILT所需信息
+   */
+  private async analyzePageForHILT(page: any, context?: any): Promise<{
+    needsInput: boolean;
+    issue: string;
+    requiredInputs: string[];
+    elements: any[];
+  }> {
+    try {
+      // 检查常见的登录元素
+      const elements = await page.evaluate(() => {
+        const inputs = Array.from(document.querySelectorAll('input')).map(input => ({
+          type: input.type,
+          name: input.name,
+          placeholder: input.placeholder,
+          id: input.id,
+          required: input.required,
+          value: input.value,
+          selector: input.tagName + (input.id ? `#${input.id}` : '') + (input.className ? `.${input.className.split(' ').join('.')}` : '')
+        }));
+        
+        const buttons = Array.from(document.querySelectorAll('button, input[type="submit"]')).map(btn => ({
+          text: btn.textContent?.trim(),
+          type: btn.type,
+          selector: btn.tagName + (btn.id ? `#${btn.id}` : '') + (btn.className ? `.${btn.className.split(' ').join('.')}` : '')
+        }));
+        
+        const messages = Array.from(document.querySelectorAll('div, span, p')).map(el => ({
+          text: el.textContent?.trim(),
+          className: el.className
+        })).filter(el => el.text && el.text.length > 0 && el.text.length < 200);
+        
+        return { inputs, buttons, messages };
+      });
+      
+      // 基于页面内容推断需要的信息
+      const requiredInputs = [];
+      let issue = '未知登录问题';
+      
+      // 检查输入框类型
+      for (const input of elements.inputs) {
+        if (input.type === 'password' && !input.value) {
+          requiredInputs.push('密码');
+        }
+        if ((input.type === 'text' || input.type === 'email') && 
+            (input.name?.includes('user') || input.name?.includes('email') || 
+             input.placeholder?.includes('用户') || input.placeholder?.includes('邮箱'))) {
+          if (!input.value) requiredInputs.push('用户名/邮箱');
+        }
+        if (input.name?.includes('code') || input.placeholder?.includes('验证码') || 
+            input.placeholder?.includes('code')) {
+          requiredInputs.push('验证码');
+        }
+      }
+      
+      // 检查错误消息
+      for (const msg of elements.messages) {
+        if (msg.text.includes('验证码') || msg.text.includes('code')) {
+          issue = '需要验证码验证';
+          if (!requiredInputs.includes('验证码')) requiredInputs.push('验证码');
+        }
+        if (msg.text.includes('手机') || msg.text.includes('phone')) {
+          issue = '需要手机号验证';
+          if (!requiredInputs.includes('手机号')) requiredInputs.push('手机号');
+        }
+        if (msg.text.includes('异地') || msg.text.includes('异常')) {
+          issue = '异地登录验证';
+        }
+      }
+      
+      return {
+        needsInput: requiredInputs.length > 0,
+        issue,
+        requiredInputs,
+        elements
+      };
+      
+    } catch (error) {
+      console.warn('⚠️ 页面分析失败:', error);
+      return {
+        needsInput: false,
+        issue: '页面分析失败',
+        requiredInputs: [],
+        elements: []
+      };
+    }
+  }
+
+  /**
+   * 从终端获取用户输入
+   */
+  private async getUserInputsFromTerminal(requiredInputs: string[]): Promise<Record<string, string>> {
+    const { createInterface } = await import('readline');
+    const rl = createInterface({
+      input: process.stdin,
+      output: process.stdout
+    });
+    
+    const inputs: Record<string, string> = {};
+    
+    for (const inputType of requiredInputs) {
+      await new Promise<void>((resolve) => {
+        const isPassword = inputType.includes('密码');
+        const prompt = `📝 请输入${inputType}: `;
+        
+        rl.question(prompt, (answer) => {
+          inputs[inputType] = answer.trim();
+          resolve();
+        });
+      });
+    }
+    
+    rl.close();
+    return inputs;
+  }
+
+  /**
+   * 使用AI自动填写用户提供的信息
+   */
+  private async autoFillWithUserInputs(page: any, userInputs: Record<string, string>, analysis: any): Promise<{
+    success: boolean;
+    error?: string;
+  }> {
+    try {
+      // 根据分析结果和用户输入自动填写表单
+      for (const [inputType, value] of Object.entries(userInputs)) {
+        let filled = false;
+        
+        // 尝试多种选择器策略
+        const strategies = [];
+        
+        if (inputType.includes('用户') || inputType.includes('邮箱')) {
+          strategies.push(
+            'input[name*="user"]',
+            'input[name*="email"]',
+            'input[placeholder*="用户名"]',
+            'input[placeholder*="邮箱"]',
+            'input[type="email"]'
+          );
+        }
+        
+        if (inputType.includes('密码')) {
+          strategies.push(
+            'input[type="password"]',
+            'input[name*="password"]',
+            'input[placeholder*="密码"]'
+          );
+        }
+        
+        if (inputType.includes('验证码')) {
+          strategies.push(
+            'input[name*="code"]',
+            'input[placeholder*="验证码"]',
+            'input[placeholder*="code"]'
+          );
+        }
+        
+        if (inputType.includes('手机')) {
+          strategies.push(
+            'input[name*="phone"]',
+            'input[name*="mobile"]',
+            'input[placeholder*="手机"]'
+          );
+        }
+        
+        for (const selector of strategies) {
+          try {
+            const element = await page.locator(selector).first();
+            if (await element.isVisible({ timeout: 2000 })) {
+              await element.fill(value);
+              console.log(`✅ 成功填写${inputType}`);
+              filled = true;
+              break;
+            }
+          } catch (e) {
+            // 继续尝试下一个选择器
+          }
+        }
+        
+        if (!filled) {
+          console.warn(`⚠️ 未能找到${inputType}的输入框`);
+        }
+      }
+      
+      return { success: true };
+      
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * 自动提交表单
+   */
+  private async autoSubmitForm(page: any): Promise<{ success: boolean }> {
+    try {
+      // 尝试多种提交按钮选择器
+      const submitSelectors = [
+        'button[type="submit"]',
+        'input[type="submit"]',
+        'button:has-text("登录")',
+        'button:has-text("Login")',
+        'button:has-text("Sign in")',
+        'button:has-text("提交")',
+        'button:has-text("Submit")',
+        '[data-testid*="login"]',
+        '[data-testid*="submit"]'
+      ];
+      
+      for (const selector of submitSelectors) {
+        try {
+          const button = await page.locator(selector).first();
+          if (await button.isVisible({ timeout: 2000 }) && await button.isEnabled()) {
+            await button.click();
+            console.log('✅ 成功点击提交按钮');
+            
+            // 等待页面跳转或响应
+            await page.waitForTimeout(3000);
+            return { success: true };
+          }
+        } catch (e) {
+          // 继续尝试下一个选择器
+        }
+      }
+      
+      // 如果没有找到按钮，尝试按回车键
+      console.log('🔄 未找到提交按钮，尝试按回车键...');
+      await page.keyboard.press('Enter');
+      await page.waitForTimeout(3000);
+      
+      return { success: true };
+      
+    } catch (error) {
+      console.error('❌ 提交表单失败:', error);
+      return { success: false };
+    }
+  }
+
+  /**
+   * 自动处理不需要用户输入的页面
+   */
+  private async autoHandlePage(page: any): Promise<{ action: string }> {
+    try {
+      // 尝试自动点击常见的继续按钮
+      const continueSelectors = [
+        'button:has-text("继续")',
+        'button:has-text("Continue")',
+        'button:has-text("下一步")',
+        'button:has-text("Next")',
+        'button:has-text("确定")',
+        'button:has-text("OK")',
+        '[data-testid*="continue"]'
+      ];
+      
+      for (const selector of continueSelectors) {
+        try {
+          const button = await page.locator(selector).first();
+          if (await button.isVisible({ timeout: 2000 }) && await button.isEnabled()) {
+            await button.click();
+            console.log('✅ 自动点击继续按钮');
+            await page.waitForTimeout(3000);
+            return { action: 'success' };
+          }
+        } catch (e) {
+          // 继续尝试
+        }
+      }
+      
+      return { action: 'retry' };
+      
+    } catch (error) {
+      console.error('❌ 自动处理页面失败:', error);
+      return { action: 'abort' };
+    }
+  }
+
+  /**
+   * 生成简化的页面操作指导
+   */
+  private getSimplePageGuidance(pageInfo: { url: string; title: string }, context?: any): string {
+    const url = pageInfo.url?.toLowerCase() || '';
+    const title = pageInfo.title?.toLowerCase() || '';
+    
+    // 根据页面特征提供针对性指导
+    if (url.includes('login') || url.includes('signin')) {
+      return `
+🔐 这是 Twitter 登录页面
+📝 请在浏览器中：
+   1. 输入用户名: ${process.env.TWITTER_USERNAME || '[从环境变量获取]'}
+   2. 输入密码
+   3. 完成任何验证步骤（验证码、短信等）
+   4. 点击登录
+
+💡 登录成功后，回到终端按 Enter 继续`;
+    } else if (url.includes('challenge') || title.includes('verify') || title.includes('suspicious')) {
+      return `
+🛡️ 这是 Twitter 安全验证页面
+📝 请在浏览器中：
+   1. 完成人机验证（CAPTCHA）
+   2. 输入手机验证码（如需要）
+   3. 完成任何身份验证步骤
+   
+💡 验证完成后，回到终端按 Enter 继续`;
+    } else if (url.includes('x.com') || url.includes('twitter.com')) {
+      return `
+🐦 这是 Twitter 主页面
+📝 如果看到正常的 Twitter 界面，说明登录成功
+📝 如果仍然看到登录相关内容，请完成登录
+
+💡 确认页面状态正常后，回到终端按 Enter 继续`;
+    } else {
+      return `
+❓ 当前页面: ${pageInfo.title}
+📝 请检查页面状态并完成必要的操作
+📝 如果遇到验证码或安全检查，请按提示完成
+
+💡 操作完成后，回到终端按 Enter 继续`;
+    }
+  }
+
+  /**
+   * 简化的用户确认机制
+   */
+  private async getSimpleUserConfirmation(): Promise<string> {
+    const { createInterface } = await import('readline');
+    
+    const rl = createInterface({
+      input: process.stdin,
+      output: process.stdout
+    });
+
+    return new Promise((resolve) => {
+      console.log('\n🎯 请选择下一步操作:');
+      console.log('   [Enter] - 我已完成操作，继续执行');
+      console.log('   [s] - 我已完成，标记为成功');
+      console.log('   [q] - 退出程序');
+      
+      rl.question('\n请输入您的选择: ', (answer) => {
+        rl.close();
+        
+        const choice = answer.trim().toLowerCase();
+        if (choice === 's' || choice === 'success') {
+          resolve('success');
+        } else if (choice === 'q' || choice === 'quit' || choice === 'abort') {
+          resolve('abort');
+        } else {
+          resolve('continue');
+        }
+      });
+    });
+  }
+
+  /**
+   * 打开可视化浏览器进行人工干预 - 使用共享userDataDir
+   */
+  private async openVisualBrowserForIntervention(): Promise<boolean> {
+    const { chromium } = await import('playwright');
+    const fs = await import('fs');
+    const path = await import('path');
+    
+    console.log('🚀 启动可视化浏览器，请手动完成Twitter登录...');
+    
+    // 确保会话目录存在
+    if (!fs.existsSync(this.twitterSessionDir)) {
+      fs.mkdirSync(this.twitterSessionDir, { recursive: true });
+      console.log(`📁 创建Twitter会话目录: ${this.twitterSessionDir}`);
+    }
+    
+    // 创建使用共享userDataDir的可视化浏览器上下文
+    const context = await chromium.launchPersistentContext(this.twitterSessionDir, {
+      headless: false,           // 关键：可视化模式
+      viewport: null,           // 使用默认视口
+      slowMo: 100,              // 略微减慢操作速度
+      args: [
+        '--start-maximized',
+        '--disable-web-security',
+        '--disable-features=VizDisplayCompositor'
+      ]
+    });
+    
+    const page = await context.newPage();
+    
+    // 导航到Twitter登录页
+    console.log('📍 导航到Twitter登录页面...');
+    try {
+      await page.goto('https://x.com/i/flow/login', { 
+        waitUntil: 'domcontentloaded',
+        timeout: 30000 
+      });
+    } catch (error) {
+      console.log('⚠️ 登录页面访问失败，尝试主页...');
+      await page.goto('https://x.com', { 
+        waitUntil: 'domcontentloaded',
+        timeout: 30000 
+      });
+    }
+    
+    console.log('\n' + '='.repeat(60));
+    console.log('🖥️  可视化浏览器已打开！');
+    console.log('📍 当前URL:', page.url());
+    console.log('='.repeat(60));
+    console.log('👤 请在浏览器中手动完成以下操作：');
+    console.log('1. 如果未登录，请点击登录按钮');
+    console.log('2. 输入用户名/邮箱：qddegtya@gmail.com');
+    console.log('3. 输入密码');
+    console.log('4. 处理验证码或安全验证（异地登录等）');
+    console.log('5. 完成登录直到看到Twitter主页');
+    console.log('='.repeat(60));
+    
+    // 等待用户完成操作
+    const { createInterface } = await import('readline');
+    const rl = createInterface({
+      input: process.stdin,
+      output: process.stdout
+    });
+    
+    return new Promise((resolve) => {
+      const checkCompletion = () => {
+        rl.question('\n✅ 登录完成了吗？请确认已经看到Twitter主页 (y/n): ', async (answer) => {
+          if (answer.toLowerCase() === 'y') {
+            console.log('✅ 登录成功确认！正在验证登录状态...');
+            
+            // 验证登录状态
+            try {
+              const currentUrl = page.url();
+              console.log('📍 当前页面URL:', currentUrl);
+              
+              // 检查多种登录状态指示器
+              const isLoggedIn = currentUrl.includes('home') || 
+                               currentUrl === 'https://x.com/' ||
+                               await page.locator('[data-testid="SideNav_AccountSwitcher_Button"]')
+                                 .isVisible({ timeout: 5000 }).catch(() => false) ||
+                               await page.locator('a[href="/compose/tweet"]')
+                                 .isVisible({ timeout: 5000 }).catch(() => false);
+              
+              if (isLoggedIn) {
+                console.log('🎉 登录状态验证成功！');
+                console.log('💾 会话数据已自动保存到共享目录：', this.twitterSessionDir);
+                
+                // 标记会话有效
+                this.hasValidSession = true;
+                this.loginState.isLoggedIn = true;
+                this.loginState.lastLoginTime = Date.now();
+                this.loginState.loginAttempts = 0;
+                
+                rl.close();
+                
+                // 保存认证状态到文件，而不是依赖userDataDir
+                const storageStatePath = `${this.twitterSessionDir}/auth.json`;
+                try {
+                  await page.context().storageState({ path: storageStatePath });
+                  console.log('✅ 认证状态已保存到:', storageStatePath);
+                } catch (error) {
+                  console.warn('⚠️ 保存认证状态失败:', error);
+                }
+                
+                // 关闭可视化浏览器上下文
+                await context.close();
+                console.log('🔒 可视化浏览器已关闭');
+                console.log(`💾 会话数据已保存到: ${storageStatePath}`);
+                console.log('🔄 后续的headless浏览器将使用相同的认证状态');
+                resolve(true);
+              } else {
+                console.warn('⚠️ 登录状态验证失败，请确保已经登录到主页');
+                rl.close();
+                await context.close();
+                resolve(false);
+              }
+              
+            } catch (error) {
+              console.warn('⚠️ 无法验证登录状态:', error);
+              rl.close();
+              await context.close();
+              resolve(false);
+            }
+            
+          } else if (answer.toLowerCase() === 'n') {
+            checkCompletion(); // 继续等待
+          } else {
+            console.log('❌ 请输入 y 或 n');
+            checkCompletion();
+          }
+        });
+      };
+      
+      checkCompletion();
+    });
+  }
+
+  /**
+   * 检查登录是否成功
+   */
+  private async checkLoginSuccess(page: any): Promise<boolean> {
+    try {
+      const currentUrl = page.url();
+      
+      // 检查URL
+      if (currentUrl.includes('home') || currentUrl === 'https://x.com/') {
+        return true;
+      }
+
+      // 检查页面元素
+      const isLoggedIn = await page.locator('[data-testid="SideNav_AccountSwitcher_Button"]')
+        .isVisible({ timeout: 3000 })
+        .catch(() => false);
+
+      return isLoggedIn;
+    } catch (error) {
+      return false;
+    }
+  }
+
+
+  /**
+   * 检查是否存在有效的会话目录
+   */
+  private async checkExistingSession(): Promise<void> {
+    try {
+      const fs = await import('fs');
+      const storageStatePath = `${this.twitterSessionDir}/auth.json`;
+      
+      if (fs.existsSync(storageStatePath)) {
+        console.log('🔍 发现现有Twitter认证状态文件:', storageStatePath);
+        // 检查文件是否有效且非空
+        const stat = fs.statSync(storageStatePath);
+        if (stat.size > 0) {
+          this.hasValidSession = true;
+          console.log('✅ 认证状态文件有效');
+        } else {
+          console.warn('⚠️ 认证状态文件为空');
+          this.hasValidSession = false;
+        }
+      } else {
+        console.log('ℹ️ 未找到现有认证状态文件');
+        this.hasValidSession = false;
+      }
+    } catch (error) {
+      console.warn('⚠️ 检查现有会话失败:', error);
+      this.hasValidSession = false;
+    }
+  }
+
+  /**
+   * 检查共享会话的登录状态
+   */
+  private async checkSharedSessionStatus(page: any): Promise<void> {
+    try {
+      // 导航到Twitter主页检查登录状态
+      await page.goto('https://x.com', { 
+        waitUntil: 'domcontentloaded',
+        timeout: 15000 
+      });
+      
+      // 检查登录状态
+      const isLoggedIn = await page.locator('[data-testid="SideNav_AccountSwitcher_Button"]')
+        .isVisible({ timeout: 5000 }).catch(() => false) ||
+        await page.locator('a[href="/compose/tweet"]')
+        .isVisible({ timeout: 5000 }).catch(() => false);
+      
+      if (isLoggedIn) {
+        console.log('✅ 共享会话仍然有效，已登录状态');
+        this.loginState.isLoggedIn = true;
+        this.loginState.lastLoginTime = Date.now();
+      } else {
+        console.log('⚠️ 共享会话已过期，需要重新登录');
+        this.hasValidSession = false;
+        // 清理过期的会话目录
+        await this.clearSessionDirectory();
+      }
+      
+    } catch (error) {
+      console.warn('⚠️ 检查共享会话状态失败:', error);
+      this.hasValidSession = false;
+    }
+  }
+
+  /**
+   * 清理会话目录
+   */
+  private async clearSessionDirectory(): Promise<void> {
+    try {
+      const fs = await import('fs');
+      const storageStatePath = `${this.twitterSessionDir}/auth.json`;
+      
+      if (fs.existsSync(storageStatePath)) {
+        fs.unlinkSync(storageStatePath);
+        console.log('🧹 已清理过期的认证状态文件');
+      }
+      
+      // 如果整个目录为空，也删除目录
+      if (fs.existsSync(this.twitterSessionDir)) {
+        const files = fs.readdirSync(this.twitterSessionDir);
+        if (files.length === 0) {
+          fs.rmdirSync(this.twitterSessionDir);
+          console.log('🧹 已清理空的会话目录');
+        }
+      }
+    } catch (error) {
+      console.warn('⚠️ 清理会话数据失败:', error);
+    }
+  }
+
+  /**
+   * 创建使用共享会话的页面
+   */
+  private async createSharedSessionPage(timeout: number): Promise<PageLease> {
+    const { chromium } = await import('playwright');
+    const fs = await import('fs');
+    
+    console.log('🔗 创建带认证状态的headless浏览器...');
+    
+    // 检查认证状态文件是否存在
+    const storageStatePath = `${this.twitterSessionDir}/auth.json`;
+    let storageState = undefined;
+    
+    if (fs.existsSync(storageStatePath)) {
+      try {
+        console.log('📖 加载保存的认证状态:', storageStatePath);
+        storageState = JSON.parse(fs.readFileSync(storageStatePath, 'utf8'));
+      } catch (error) {
+        console.warn('⚠️ 读取认证状态失败:', error);
+        storageState = undefined;
+      }
+    }
+    
+    // 启动可视化浏览器 - 便于用户干预
+    const browser = await chromium.launch({
+      headless: false,           // 改为可视化模式
+      args: [
+        '--start-maximized',     // 最大化窗口
+        '--disable-web-security',
+        '--disable-features=VizDisplayCompositor',
+        '--no-sandbox'
+      ]
+    });
+    
+    // 创建带认证状态的浏览器上下文
+    const context = await browser.newContext({
+      userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36',
+      storageState: storageState  // 关键：注入认证状态
+    });
+    
+    const page = await context.newPage();
+    page.setDefaultTimeout(timeout);
+    page.setDefaultNavigationTimeout(timeout);
+    
+    // 创建一个lease对象来模拟BrowserPool的返回格式
+    const lease: PageLease = {
+      id: `shared_session_${Date.now()}`,
+      page,
+      browserInstance: {
+        id: `shared_browser_${Date.now()}`,
+        browser: browser, // 现在有真正的browser对象了
+        context,
+        status: 'busy' as const,
+        createdAt: new Date(),
+        usageCount: 1,
+        lastUsed: new Date()
+      },
+      leasedAt: new Date(),
+      timeout,
+      // 自定义的返回方法
+      return: async () => {
+        console.log('🔒 关闭共享会话浏览器');
+        await context.close();
+      }
+    };
+    
+    console.log('✅ 共享会话页面创建成功');
+    return lease;
+  }
 
   /**
    * 检查登录会话是否仍然有效
@@ -563,12 +1568,69 @@ export class TwitterSearchAgent extends Component {
   }
 
   /**
+   * 确保在搜索结果页面切换到"最新"标签
+   */
+  private async ensureLatestTab(page: any): Promise<void> {
+    try {
+      console.log('🔍 检查搜索结果标签页...');
+      
+      // 等待搜索结果页面加载
+      await page.waitForTimeout(2000);
+      
+      // 尝试多种可能的"最新"标签选择器
+      const latestSelectors = [
+        'a[href*="&f=live"]',           // 最新标签的直接链接
+        'a[data-testid="SearchTabs_Latest"]', // 可能的测试ID
+        'nav[role="tablist"] a:nth-child(2)', // 通常最新是第二个标签
+        'a:has-text("Latest")',         // 包含"Latest"文本的链接
+        'a:has-text("最新")',           // 中文界面
+      ];
+      
+      let clicked = false;
+      for (const selector of latestSelectors) {
+        try {
+          const element = await page.locator(selector).first();
+          if (await element.isVisible({ timeout: 3000 })) {
+            console.log(`📱 找到"最新"标签，选择器: ${selector}`);
+            await element.click();
+            await page.waitForTimeout(2000);
+            clicked = true;
+            break;
+          }
+        } catch (e) {
+          // 继续尝试下一个选择器
+        }
+      }
+      
+      if (!clicked) {
+        // 如果找不到标签，尝试直接修改URL
+        const currentUrl = page.url();
+        if (currentUrl.includes('search') && !currentUrl.includes('f=live')) {
+          const newUrl = currentUrl.includes('?') ? 
+            currentUrl + '&f=live' : currentUrl + '?f=live';
+          console.log('🔗 直接导航到最新搜索结果:', newUrl);
+          await page.goto(newUrl, { waitUntil: 'domcontentloaded' });
+          await page.waitForTimeout(2000);
+        }
+      }
+      
+      console.log('✅ 已切换到最新推文标签');
+      
+    } catch (error) {
+      console.warn('⚠️ 切换到最新标签失败，继续使用当前页面:', error);
+    }
+  }
+
+  /**
    * 滚动加载更多推文
    */
   private async scrollToLoadMoreTweets(page: any): Promise<void> {
     try {
+      console.log('🔄 开始寻找推文元素...');
+      
       // 等待初始内容加载
       await page.waitForSelector('article[data-testid="tweet"]', { timeout: 10000 });
+      console.log('✅ 找到推文元素');
 
       // 滚动 3-5 次以加载更多内容
       const scrollCount = Math.floor(Math.random() * 3) + 3;

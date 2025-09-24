@@ -442,28 +442,23 @@ class IntegrationTestSuite {
   }
 
   /**
-   * 清理资源
+   * 清理资源 - 委托给核心Pipeline处理
    */
   private async cleanup(): Promise<void> {
     console.log('\n🧹 清理测试资源...');
     
     try {
-      // 清理pipeline实例
+      // 核心Pipeline已经包含完整的清理逻辑
       if (this.pipeline) {
-        console.log('  🔄 清理Pipeline实例...');
         await this.pipeline.cleanup();
-        console.log('  ✅ Pipeline清理完成');
       }
       
-      // 额外等待确保所有异步操作完成
-      console.log('  ⏳ 等待异步操作完成...');
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
+      // 重置测试状态
       this.isInitialized = false;
-      console.log('  ✅ 资源清理完成');
+      console.log('✅ 测试资源清理完成');
       
     } catch (error) {
-      console.error('  ❌ 资源清理过程中出错:', error instanceof Error ? error.message : String(error));
+      console.error('❌ 测试资源清理过程中出错:', error instanceof Error ? error.message : String(error));
       // 不抛出错误，避免掩盖主要的测试错误
     }
   }

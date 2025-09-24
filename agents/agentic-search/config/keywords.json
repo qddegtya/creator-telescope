@@ -13,19 +13,23 @@
       "enabled": true,
       "priority": 1,
       "searchQueries": [
-        "AI agent framework new 2024",
-        "autonomous agent library GitHub",
-        "LangChain agent tutorial",
-        "CrewAI multi-agent framework",
-        "AutoGen agent framework Microsoft",
-        "intelligent agent architecture"
+        "AI agent framework September 2025",
+        "autonomous agent news 2025",
+        "LangChain CrewAI AutoGen latest 2025",
+        "swarm agent OpenAI Claude 2025",
+        "agentic AI breakthrough 2025",
+        "multi-agent system release 2025",
+        "AI agent orchestration platform 2025",
+        "agent workflow automation latest"
       ],
       "siteFilters": [
         "site:github.com",
         "site:reddit.com/r/MachineLearning",
         "site:medium.com",
         "site:towardsdatascience.com",
-        "site:paperswithcode.com"
+        "site:paperswithcode.com",
+        "site:news.ycombinator.com",
+        "site:arxiv.org"
       ]
     },
     "twitter": {
@@ -41,28 +45,32 @@
         "#AutonomousAgent"
       ],
       "searchQueries": [
-        "AI agent framework",
-        "autonomous agent",
-        "LLM agent",
-        "agent orchestration",
-        "multi-agent system"
+        "AI agent framework 2025",
+        "autonomous agent news",
+        "LLM agent latest",
+        "agent orchestration 2025",
+        "multi-agent system breakthrough"
       ]
     },
     "github": {
       "enabled": true,
       "priority": 1,
       "searchQueries": [
-        "agent framework",
-        "autonomous agent",
-        "llm agent",
-        "ai automation",
-        "multi-agent",
-        "agent orchestration"
+        "AI agent framework",
+        "autonomous agent 2025",
+        "llm agent library",
+        "ai automation tool",
+        "multi-agent system",
+        "agent orchestration",
+        "agentic ai",
+        "CrewAI AutoGen LangChain",
+        "swarm agent",
+        "agent workflow"
       ],
       "filters": {
-        "language": ["TypeScript", "Python", "JavaScript"],
-        "minStars": 50,
-        "pushedAfter": "2024-09-21"
+        "language": ["TypeScript", "Python", "JavaScript", "Go", "Rust"],
+        "minStars": 10,
+        "pushedAfter": "2025-07-01"
       }
     }
   },

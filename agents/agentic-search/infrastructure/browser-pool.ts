@@ -119,8 +119,8 @@ export class BrowserPool extends Component {
       minInstances: 2,
       maxInstances: 10,
       maxUsagePerBrowser: 50,
-      idleTimeout: 300000, // 5 分钟
-      pageTimeout: 30000,  // 30 秒
+      idleTimeout: 600000, // 10 分钟 - 增加闲置超时
+      pageTimeout: 300000, // 5 分钟 - 大幅增加页面超时，适应Browser Use Agent和HILT
       incognito: true,
       antiCrawling: {
         userAgentRotation: true,
@@ -216,17 +216,16 @@ export class BrowserPool extends Component {
     console.log('🚀 创建新的浏览器实例...');
 
     try {
-      // 浏览器启动选项
+      // 浏览器启动选项 - 可视化模式便于调试和干预
       const launchOptions: any = {
-        headless: true,
+        headless: false,         // 改为可视化模式
+        slowMo: 50,             // 略微减慢操作速度，便于观察
         args: [
+          '--start-maximized',    // 最大化窗口
           '--no-sandbox',
           '--disable-setuid-sandbox',
           '--disable-dev-shm-usage',
-          '--disable-accelerated-2d-canvas',
           '--no-first-run',
-          '--no-zygote',
-          '--disable-gpu',
           '--disable-background-timer-throttling',
           '--disable-backgrounding-occluded-windows',
           '--disable-renderer-backgrounding',

@@ -99,20 +99,32 @@ export class GoogleSearchAgent extends Component {
     try {
       const page = await browser.newPage();
       
-      // 设置随机 User Agent
-      await page.setUserAgent(this.getRandomUserAgent());
+      // 设置反爬虫措施
+      await this.setupAntiDetection(page);
       
-      // 设置视口
-      await page.setViewportSize({ width: 1920, height: 1080 });
-
       // 构建搜索 URL
       const searchUrl = this.buildSearchUrl(query, task);
       
       console.log(`  🌐 搜索查询: ${query}`);
-      await page.goto(searchUrl, { waitUntil: 'networkidle' });
+      
+      // 随机延迟
+      await this.randomDelay(1000, 3000);
+      
+      await page.goto(searchUrl, { 
+        waitUntil: 'domcontentloaded',
+        timeout: 30000 
+      });
 
-      // 等待搜索结果加载
-      await page.waitForSelector('[data-ved]', { timeout: 10000 });
+      // 等待搜索结果加载 - 尝试多种选择器
+      try {
+        await page.waitForSelector('div[data-ved], .g, [jscontroller]', { timeout: 15000 });
+      } catch (e) {
+        console.warn('主要选择器等待超时，尝试备用选择器');
+        await page.waitForSelector('h3, a', { timeout: 5000 });
+      }
+
+      // 模拟人类行为
+      await this.simulateHumanBehavior(page);
 
       // 提取搜索结果
       const results = await this.extractSearchResults(page, query, task);
@@ -126,6 +138,98 @@ export class GoogleSearchAgent extends Component {
     } finally {
       this.browserPool.release(browser);
     }
+  }
+
+  /**
+   * 设置反检测措施
+   */
+  private async setupAntiDetection(page: any): Promise<void> {
+    // 设置随机 User Agent
+    await page.setUserAgent(this.getRandomUserAgent());
+    
+    // 设置随机视口
+    const viewports = [
+      { width: 1920, height: 1080 },
+      { width: 1366, height: 768 },
+      { width: 1440, height: 900 },
+      { width: 1536, height: 864 }
+    ];
+    const viewport = viewports[Math.floor(Math.random() * viewports.length)];
+    await page.setViewportSize(viewport);
+
+    // 设置额外的请求头
+    await page.setExtraHTTPHeaders({
+      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+      'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
+      'Accept-Encoding': 'gzip, deflate, br',
+      'DNT': '1',
+      'Connection': 'keep-alive',
+      'Upgrade-Insecure-Requests': '1',
+      'Sec-Fetch-Dest': 'document',
+      'Sec-Fetch-Mode': 'navigate',
+      'Sec-Fetch-Site': 'none',
+      'Cache-Control': 'max-age=0'
+    });
+
+    // 注入脚本隐藏webdriver特征
+    await page.addInitScript(() => {
+      // 隐藏webdriver属性
+      Object.defineProperty(navigator, 'webdriver', {
+        get: () => undefined,
+      });
+
+      // 伪造plugins
+      Object.defineProperty(navigator, 'plugins', {
+        get: () => [1, 2, 3, 4, 5],
+      });
+
+      // 伪造语言
+      Object.defineProperty(navigator, 'languages', {
+        get: () => ['zh-CN', 'zh', 'en'],
+      });
+
+      // 隐藏自动化特征
+      window.chrome = {
+        runtime: {},
+      };
+
+      Object.defineProperty(navigator, 'permissions', {
+        get: () => ({
+          query: () => Promise.resolve({ state: 'granted' }),
+        }),
+      });
+    });
+  }
+
+  /**
+   * 模拟人类行为
+   */
+  private async simulateHumanBehavior(page: any): Promise<void> {
+    try {
+      // 随机鼠标移动
+      await page.mouse.move(
+        Math.random() * 1000,
+        Math.random() * 600
+      );
+
+      // 随机滚动
+      await page.evaluate(() => {
+        window.scrollTo(0, Math.random() * 500);
+      });
+
+      // 随机短暂等待
+      await this.randomDelay(500, 1500);
+    } catch (e) {
+      // 忽略模拟行为错误
+    }
+  }
+
+  /**
+   * 随机延迟
+   */
+  private async randomDelay(min: number, max: number): Promise<void> {
+    const delay = Math.floor(Math.random() * (max - min + 1)) + min;
+    await new Promise(resolve => setTimeout(resolve, delay));
   }
 
   /**
@@ -157,55 +261,137 @@ export class GoogleSearchAgent extends Component {
   private async extractSearchResults(page: any, query: string, task: GoogleSearchTask): Promise<SearchContent[]> {
     return await page.evaluate((query: string, timeWindow: string) => {
       const results: any[] = [];
-      const searchResults = document.querySelectorAll('[data-ved] h3');
+      
+      // 尝试多种选择器，适应Google的不同版本
+      const possibleSelectors = [
+        'div[data-ved] h3',           // 新版Google
+        '[jscontroller] h3',          // 另一种新版格式
+        '.g h3',                      // 传统格式
+        '[data-header-feature] h3',   // 特殊情况
+        'div.g div.yuRUbf h3'         // 最新格式
+      ];
+
+      let searchResults: NodeListOf<Element> | null = null;
+      
+      // 尝试每个选择器，直到找到结果
+      for (const selector of possibleSelectors) {
+        const elements = document.querySelectorAll(selector);
+        if (elements.length > 0) {
+          searchResults = elements;
+          console.log(`使用选择器: ${selector}, 找到 ${elements.length} 个结果`);
+          break;
+        }
+      }
+
+      if (!searchResults || searchResults.length === 0) {
+        console.warn('未找到任何搜索结果，尝试备用方案');
+        // 备用方案：查找所有包含链接的h3元素
+        searchResults = document.querySelectorAll('h3 a, a h3');
+      }
 
       for (let i = 0; i < Math.min(searchResults.length, 15); i++) {
-        const titleElement = searchResults[i];
-        const linkElement = titleElement.closest('a');
-        const containerElement = titleElement.closest('[data-ved]');
+        const element = searchResults[i];
+        let titleElement: Element;
+        let linkElement: HTMLAnchorElement | null;
 
-        if (!linkElement || !containerElement) continue;
+        // 根据元素类型确定title和link
+        if (element.tagName === 'H3') {
+          titleElement = element;
+          linkElement = element.closest('a') || element.querySelector('a');
+        } else if (element.tagName === 'A') {
+          linkElement = element as HTMLAnchorElement;
+          titleElement = linkElement.querySelector('h3') || linkElement;
+        } else {
+          continue;
+        }
+
+        if (!linkElement) continue;
 
         const title = titleElement.textContent?.trim();
-        const url = linkElement.href;
+        let url = linkElement.href;
         
-        if (!title || !url || url.includes('google.com')) continue;
+        // 清理Google重定向URL
+        if (url?.includes('/url?q=')) {
+          try {
+            const urlParams = new URLSearchParams(url.split('?')[1]);
+            url = urlParams.get('q') || url;
+          } catch (e) {
+            // 保持原URL
+          }
+        }
+        
+        if (!title || !url || url.includes('google.com') || url.startsWith('javascript:')) continue;
 
-        // 获取描述
-        const descElements = containerElement.querySelectorAll('[data-sncf]');
+        // 获取描述 - 尝试多种方式
         let description = '';
-        for (const descElement of descElements) {
-          const text = descElement.textContent?.trim();
-          if (text && text.length > description.length) {
-            description = text;
+        const containerElement = element.closest('[data-ved], .g, [jscontroller]');
+        
+        if (containerElement) {
+          // 尝试多种描述选择器
+          const descSelectors = [
+            '.VwiC3b',           // 新版描述
+            '[data-sncf]',       // 旧版描述
+            '.s',                // 传统描述
+            '.st',               // 另一种传统描述
+            'span[data-ved]'     // 备用描述
+          ];
+
+          for (const descSelector of descSelectors) {
+            const descElements = containerElement.querySelectorAll(descSelector);
+            for (const descElement of descElements) {
+              const text = descElement.textContent?.trim();
+              if (text && text.length > 20 && text.length > description.length) {
+                description = text;
+              }
+            }
+            if (description) break;
           }
         }
 
         // 获取发布时间
-        const timeElements = containerElement.querySelectorAll('span[aria-label*="天前"], span[aria-label*="小时前"], span[aria-label*="分钟前"]');
         let publishedAt: Date | undefined;
-        
-        if (timeElements.length > 0) {
-          const timeText = timeElements[0].textContent;
-          // 简单时间解析，会在外部处理
-          publishedAt = new Date();
+        if (containerElement) {
+          const timeSelectors = [
+            'span[aria-label*="ago"]',
+            'span[aria-label*="天前"]', 
+            'span[aria-label*="小时前"]', 
+            'span[aria-label*="分钟前"]',
+            '.f, .fG14ld, .LEwnzc'
+          ];
+
+          for (const timeSelector of timeSelectors) {
+            const timeElements = containerElement.querySelectorAll(timeSelector);
+            if (timeElements.length > 0) {
+              publishedAt = new Date(); // 简化时间处理
+              break;
+            }
+          }
+        }
+
+        // 验证URL格式
+        try {
+          new URL(url);
+        } catch (e) {
+          continue; // 跳过无效URL
         }
 
         results.push({
           id: `google_${Date.now()}_${i}`,
           title,
-          content: description,
+          content: description || title, // 如果没有描述，使用标题
           url,
           source: 'google',
           timestamp: publishedAt || new Date(),
           metadata: {
             author: new URL(url).hostname.replace('www.', ''),
             platform: 'google',
-            tags: [query]
+            tags: [query],
+            hasDescription: !!description
           }
         });
       }
 
+      console.log(`Google搜索提取完成: 找到 ${results.length} 个有效结果`);
       return results;
     }, query, task.timeRange || '');
   }

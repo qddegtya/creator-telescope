@@ -798,22 +798,36 @@ export class MultiAgentSearchPipeline extends Pipeline {
    * 清理资源
    */
   async cleanup(): Promise<void> {
-    console.log('🧹 清理 Pipeline 资源');
+    console.log('🧹 清理 Pipeline 资源...');
 
     try {
-      // 关闭浏览器池
+      // 1. 清理浏览器池
       if (this.browserPool) {
+        console.log('  🔄 清理浏览器池...');
         await this.browserPool.destroy();
+        console.log('  ✅ 浏览器池清理完成');
       }
       
-      // 终止Worker池
+      // 2. 终止Worker池
       if (this.workerPool) {
+        console.log('  🔄 清理工作线程池...');
         await this.workerPool.destroy();
+        console.log('  ✅ 工作线程池清理完成');
       }
       
-      console.log('✅ 资源清理完成');
+      // 3. 等待异步操作完成
+      console.log('  ⏳ 等待异步操作完成...');
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      // 4. 清理统计数据
+      this.executionStats.endTime = new Date();
+      this.executionStats.totalDuration = this.executionStats.endTime.getTime() - this.executionStats.startTime.getTime();
+      
+      console.log('  ✅ Pipeline资源清理完成');
+      
     } catch (error) {
-      console.error('❌ 资源清理失败:', error);
+      console.error('  ❌ 资源清理过程中出错:', error instanceof Error ? error.message : String(error));
+      // 不抛出错误，避免掩盖主要的执行错误
     }
   }
 
@@ -845,3 +859,104 @@ export class MultiAgentSearchPipeline extends Pipeline {
 }
 
 export default MultiAgentSearchPipeline;
+
+/**
+ * 主执行函数 - 运行真实的AI agent搜索
+ */
+async function main() {
+  console.log('🚀 启动Creator Telescope AI Agent搜索系统');
+  console.log('📅 当前时间:', new Date().toLocaleString('zh-CN'));
+  
+  const pipeline = new MultiAgentSearchPipeline();
+  
+  try {
+    // 从配置文件加载搜索输入
+    const { default: keywordsConfig } = await import('../config/keywords.json', { 
+      with: { type: 'json' } 
+    });
+    
+    console.log('📋 搜索配置:');
+    console.log('  🎯 焦点关键词:', keywordsConfig.focus);
+    console.log('  ⏱️ 时间窗口:', keywordsConfig.timeWindow);
+    console.log('  🔍 搜索源:', Object.keys(keywordsConfig.sources).filter(s => keywordsConfig.sources[s].enabled));
+    
+    // 构建搜索输入
+    const searchInput = {
+      keywords: keywordsConfig.focus,
+      userPreferences: {
+        timeWindow: keywordsConfig.timeWindow,
+        preferredSources: Object.keys(keywordsConfig.sources).filter(s => keywordsConfig.sources[s].enabled),
+        qualityThreshold: keywordsConfig.quality.minRelevanceScore
+      },
+      searchScope: ['google', 'twitter', 'github'],
+      qualityRequirements: 'high'
+    };
+    
+    console.log('\n🔍 开始执行搜索...');
+    const result = await pipeline.execute(searchInput);
+    
+    if (result.success) {
+      console.log('\n✅ 搜索完成！');
+      console.log('📊 搜索结果统计:');
+      console.log(`  📄 内容总数: ${result.contents?.length || 0}`);
+      console.log(`  ⏱️ 执行时间: ${result.metadata?.executionTime}ms`);
+      console.log(`  🎯 内容源: ${result.metadata?.contentSources?.join(', ')}`);
+      console.log(`  ✨ 高质量内容: ${result.metadata?.finalContentCount}`);
+      
+      if (result.newsletter) {
+        console.log('\n📰 新闻简报生成:');
+        console.log(`  📝 标题: ${result.newsletter.title}`);
+        console.log(`  📄 章节数: ${result.newsletter.sections?.length || 0}`);
+      }
+      
+      // 输出推荐建议
+      if (result.analytics?.recommendations) {
+        console.log('\n💡 系统建议:');
+        result.analytics.recommendations.forEach((rec: string, i: number) => {
+          console.log(`  ${i + 1}. ${rec}`);
+        });
+      }
+      
+      console.log('\n🎉 Creator Telescope搜索完成！');
+      
+    } else {
+      console.error('\n❌ 搜索失败:');
+      console.error('  错误:', result.error);
+      
+      if (result.metadata?.errors?.length) {
+        console.error('  详细错误:');
+        result.metadata.errors.forEach((err: string, i: number) => {
+          console.error(`    ${i + 1}. ${err}`);
+        });
+      }
+    }
+    
+  } catch (error) {
+    console.error('\n💥 系统错误:', error instanceof Error ? error.message : String(error));
+    throw error; // 重新抛出错误以确保进程正确退出
+    
+  } finally {
+    // 清理资源
+    console.log('\n🧹 开始系统资源清理...');
+    await pipeline.cleanup();
+    
+    // 确保所有异步操作完成
+    console.log('⏳ 最终同步等待...');
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    console.log('✅ 系统清理完成，准备退出');
+  }
+}
+
+// 如果直接运行此文件，执行主函数
+if (import.meta.url === `file://${process.argv[1]}`) {
+  main()
+    .then(() => {
+      console.log('🎉 程序正常完成');
+      process.exit(0);
+    })
+    .catch(error => {
+      console.error('💥 致命错误:', error);
+      process.exit(1);
+    });
+}
