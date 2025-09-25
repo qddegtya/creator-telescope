@@ -1,0 +1,497 @@
+---
+import type { ValidUrl } from "../types";
+import { 
+  parseMarkdownSync, 
+  extractSourceInfo, 
+  extractGitHubMeta, 
+  extractTwitterMeta,
+  optimizeDescription 
+} from "../utils/markdown.ts";
+
+interface Props {
+  teaser: ValidUrl | undefined;
+  link: ValidUrl | undefined;
+  description: string | undefined;
+  title: string | undefined;
+}
+
+const { teaser, description, title, link } = Astro.props;
+
+// 处理和优化描述内容
+const cleanDescription = description ? optimizeDescription(description) : '';
+const parsedDescription = cleanDescription ? parseMarkdownSync(cleanDescription) : '';
+
+// 提取来源和元数据信息
+const sourceInfo = description ? extractSourceInfo(description) : null;
+const githubMeta = sourceInfo?.type === 'github' && description ? extractGitHubMeta(description) : null;
+const twitterMeta = sourceInfo?.type === 'twitter' && description ? extractTwitterMeta(description) : null;
+
+// 生成简化的卡片样式
+const cardClass = `newsletter-card ${sourceInfo?.type ? `card--${sourceInfo.type}` : 'card--default'}`;
+---
+
+<article class={cardClass}>
+  <div class="card__content">
+    {teaser && (
+      <div class="card__teaser">
+        <img src={teaser} alt={title || "预览图"} loading="lazy" />
+      </div>
+    )}
+    
+    <div class="card__body">
+      <!-- 来源标签 -->
+      {sourceInfo && (
+        <div class="card__source">
+          <span class="source-badge" data-type={sourceInfo.type}>
+            <span class="source-icon">{sourceInfo.icon}</span>
+            <span class="source-label">{sourceInfo.label}</span>
+          </span>
+        </div>
+      )}
+
+      <!-- 标题 -->
+      {title && (
+        <h3 class="card__title">
+          {link ? (
+            <a href={link} target="_blank" rel="noopener noreferrer" class="title-link">
+              {title}
+            </a>
+          ) : (
+            title
+          )}
+        </h3>
+      )}
+      
+      <!-- GitHub项目元数据 -->
+      {githubMeta && (githubMeta.stars || githubMeta.language) && (
+        <div class="card__meta card__meta--github">
+          {githubMeta.language && (
+            <span class="meta-item">
+              <span class="meta-icon">💻</span>
+              <span class="meta-text">{githubMeta.language}</span>
+            </span>
+          )}
+          {githubMeta.stars && (
+            <span class="meta-item">
+              <span class="meta-icon">⭐</span>
+              <span class="meta-text">{githubMeta.stars}</span>
+            </span>
+          )}
+          {githubMeta.forks && (
+            <span class="meta-item">
+              <span class="meta-icon">🍴</span>
+              <span class="meta-text">{githubMeta.forks}</span>
+            </span>
+          )}
+        </div>
+      )}
+
+      <!-- Twitter动态元数据 -->
+      {twitterMeta && (twitterMeta.likes || twitterMeta.author) && (
+        <div class="card__meta card__meta--twitter">
+          {twitterMeta.author && (
+            <span class="meta-item">
+              <span class="meta-icon">👤</span>
+              <span class="meta-text">{twitterMeta.author}</span>
+            </span>
+          )}
+          {twitterMeta.likes && (
+            <span class="meta-item">
+              <span class="meta-icon">❤️</span>
+              <span class="meta-text">{twitterMeta.likes}</span>
+            </span>
+          )}
+          {twitterMeta.retweets && (
+            <span class="meta-item">
+              <span class="meta-icon">🔄</span>
+              <span class="meta-text">{twitterMeta.retweets}</span>
+            </span>
+          )}
+        </div>
+      )}
+      
+      <!-- 描述内容 -->
+      {parsedDescription && (
+        <div class="card__description" set:html={parsedDescription} />
+      )}
+      
+      <!-- 操作按钮 -->
+      {link && (
+        <div class="card__actions">
+          <a
+            href={link}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="card__link"
+          >
+            <span>查看详情</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+              <polyline points="15,3 21,3 21,9"></polyline>
+              <line x1="10" y1="14" x2="21" y2="3"></line>
+            </svg>
+          </a>
+        </div>
+      )}
+    </div>
+  </div>
+</article>
+
+<style>
+  /* 基础卡片样式 */
+  .newsletter-card {
+    position: relative;
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 20px;
+    
+    /* 精致的多层阴影系统 */
+    box-shadow: 
+      0 1px 3px rgba(0, 0, 0, 0.04),
+      0 4px 8px rgba(0, 0, 0, 0.02),
+      0 8px 16px rgba(0, 0, 0, 0.01),
+      0 0 0 1px rgba(255, 255, 255, 0.1) inset;
+    
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    
+    &:hover {
+      transform: translateY(-2px);
+      border-color: rgba(0, 0, 0, 0.08);
+      
+      box-shadow: 
+        0 4px 8px rgba(0, 0, 0, 0.08),
+        0 8px 16px rgba(0, 0, 0, 0.04),
+        0 16px 32px rgba(0, 0, 0, 0.02),
+        0 32px 64px rgba(0, 0, 0, 0.01),
+        0 0 0 1px rgba(255, 255, 255, 0.15) inset;
+    }
+    
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+
+  /* 不同来源的卡片主题色彩 */
+  .card--github {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(246, 248, 250, 0.9) 100%);
+    
+    &:hover {
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(246, 248, 250, 0.95) 100%);
+      border-color: rgba(27, 31, 36, 0.1);
+    }
+  }
+
+  .card--twitter {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(232, 245, 254, 0.8) 100%);
+    
+    &:hover {
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(232, 245, 254, 0.9) 100%);
+      border-color: rgba(29, 161, 242, 0.1);
+    }
+  }
+
+  .card--google {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(254, 247, 224, 0.8) 100%);
+    
+    &:hover {
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(254, 247, 224, 0.9) 100%);
+      border-color: rgba(217, 119, 6, 0.1);
+    }
+  }
+
+  .card__content {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .card__teaser {
+    width: 100%;
+    border-radius: 12px;
+    overflow: hidden;
+    background: linear-gradient(135deg, #fafafa 0%, #f5f5f5 100%);
+    
+    img {
+      width: 100%;
+      height: auto;
+      display: block;
+      transition: transform 0.3s ease;
+      
+      &:hover {
+        transform: scale(1.02);
+      }
+    }
+  }
+
+  .card__body {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .card__source {
+    margin-bottom: 2px;
+  }
+
+  .source-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+    
+    &[data-type="github"] {
+      background: linear-gradient(135deg, #f6f8fa 0%, #e1e4e8 100%);
+      color: #24292f;
+      border: 1px solid rgba(27, 31, 36, 0.08);
+    }
+    
+    &[data-type="twitter"] {
+      background: linear-gradient(135deg, #e8f5fe 0%, #bbdefb 100%);
+      color: #1565c0;
+      border: 1px solid rgba(21, 101, 192, 0.1);
+    }
+    
+    &[data-type="google"] {
+      background: linear-gradient(135deg, #fef7e0 0%, #fed7aa 100%);
+      color: #c2410c;
+      border: 1px solid rgba(194, 65, 12, 0.1);
+    }
+  }
+
+  .source-icon {
+    font-size: 14px;
+    line-height: 1;
+  }
+
+  .source-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+  }
+
+  .card__title {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 1.1;
+    letter-spacing: -0.01em;
+    color: #1a1a1a;
+  }
+
+  .title-link {
+    color: inherit;
+    text-decoration: none;
+    transition: color 0.2s ease;
+    
+    &:hover {
+      color: #0969da;
+    }
+  }
+
+  .card__meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+  }
+
+  .meta-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    color: #666666;
+  }
+
+  .meta-icon {
+    font-size: 13px;
+    line-height: 1;
+  }
+
+  .meta-text {
+    font-weight: 500;
+    color: #444444;
+  }
+  
+  .card__description {
+    color: #333333;
+    font-size: 14px;
+    line-height: 1.6;
+    letter-spacing: 0.01em;
+    
+    /* Markdown样式增强 */
+    :global(strong) {
+      font-weight: 600;
+      color: #1a1a1a;
+    }
+    
+    :global(em) {
+      font-style: italic;
+      color: #555555;
+    }
+    
+    :global(code) {
+      background: rgba(175, 184, 193, 0.2);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: 'SF Mono', 'Monaco', 'Cascadia Code', 'Roboto Mono', monospace;
+      font-size: 12px;
+      color: #d73a49;
+      font-weight: 500;
+    }
+    
+    :global(a) {
+      color: #0969da;
+      text-decoration: none;
+      font-weight: 500;
+      border-bottom: 1px solid rgba(9, 105, 218, 0.2);
+      transition: all 0.2s ease;
+      
+      &:hover {
+        color: #0550ae;
+        border-bottom-color: rgba(5, 80, 174, 0.4);
+        background: rgba(9, 105, 218, 0.06);
+        padding: 1px 3px;
+        border-radius: 3px;
+      }
+    }
+    
+    :global(.separator) {
+      color: #999999;
+      margin: 0 6px;
+      font-weight: 300;
+      opacity: 0.6;
+    }
+    
+    :global(br) {
+      line-height: 1.8;
+    }
+    
+    /* 段落间距 */
+    :global(p) {
+      margin: 0 0 12px 0;
+      
+      &:last-child {
+        margin-bottom: 0;
+      }
+    }
+    
+    /* 强调内容样式 */
+    :global(p strong) {
+      display: block;
+      margin: 8px 0 4px 0;
+      font-weight: 600;
+      color: #1a1a1a;
+      font-size: 13px;
+    }
+    
+    /* 内容块分隔 */
+    :global(p:has(strong)) {
+      margin-bottom: 6px;
+    }
+  }
+
+  .card__actions {
+    display: flex;
+    align-items: center;
+    margin-top: 8px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(0, 0, 0, 0.04);
+  }
+
+  .card__link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 8px;
+    color: #374151;
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    
+    /* 按钮阴影 */
+    box-shadow: 
+      0 1px 2px rgba(0, 0, 0, 0.05),
+      0 0 0 1px rgba(255, 255, 255, 0.1) inset;
+    
+    &:hover {
+      background: linear-gradient(135deg, #f1f3f4 0%, #e8eaed 100%);
+      border-color: rgba(0, 0, 0, 0.12);
+      color: #1f2937;
+      transform: translateY(-1px);
+      
+      box-shadow: 
+        0 2px 4px rgba(0, 0, 0, 0.08),
+        0 4px 8px rgba(0, 0, 0, 0.04),
+        0 0 0 1px rgba(255, 255, 255, 0.15) inset;
+      
+      svg {
+        transform: translate(1px, -1px);
+      }
+    }
+    
+    &:active {
+      transform: translateY(0);
+      transition: transform 0.1s ease;
+    }
+    
+    svg {
+      transition: transform 0.2s ease;
+      opacity: 0.7;
+    }
+  }
+
+  /* 响应式设计 */
+  @media (max-width: 640px) {
+    .newsletter-card {
+      padding: 16px;
+      border-radius: 12px;
+      margin-bottom: 16px;
+    }
+    
+    .card__title {
+      font-size: 15px;
+      margin-bottom: 6px;
+    }
+    
+    .card__description {
+      font-size: 13px;
+    }
+    
+    .meta-item {
+      font-size: 11px;
+    }
+  }
+  
+  @media (max-width: 480px) {
+    .newsletter-card {
+      padding: 14px;
+      border-radius: 10px;
+      margin-bottom: 14px;
+    }
+    
+    .card__title {
+      font-size: 14px;
+      margin-bottom: 4px;
+    }
+    
+    .card__link {
+      padding: 8px 12px;
+      font-size: 12px;
+    }
+  }
+</style>

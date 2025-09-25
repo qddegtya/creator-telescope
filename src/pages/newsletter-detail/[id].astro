@@ -1,7 +1,7 @@
 ---
 import NewsLetterDetailLayout from "../../layouts/NewsLetterDetailLayout.astro";
 import NewsletterContainer from "../../components/NewsletterContainer.astro";
-import NewsletterItem from "../../components/NewsletterItem.astro";
+import NewsletterItemRefined from "../../components/NewsletterItemRefined.astro";
 
 import { getEntry, getCollection } from "astro:content";
 
@@ -30,7 +30,7 @@ const entry = await getEntry("newsletters", id);
     {
       entry?.data?.contentList.map((content) => {
         return (
-          <NewsletterItem
+          <NewsletterItemRefined
             teaser={content.teaser}
             title={content.title}
             description={content.description}

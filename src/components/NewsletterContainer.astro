@@ -8,52 +8,345 @@ interface Props {
 }
 
 const { summary, id, date } = Astro.props;
+
+// 格式化日期显示
+const formatDate = (date: Date | undefined) => {
+  if (!date) return '';
+  return new Intl.DateTimeFormat('zh-CN', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    weekday: 'long'
+  }).format(date);
+};
 ---
 
-<div style="position: relative;padding-top: 48px;">
-  <div style="position: absolute;top: -28px;left: 0;">
-    <a href="/newsletter-list" title="返回列表页"
-      ><img
+<div class="newsletter-container">
+  <!-- 返回按钮 -->
+  <div class="back-button">
+    <a href="/newsletter-list" title="返回列表页" class="back-link">
+      <img
         src={returnToListIcon.src}
-        width="28"
-        height="28"
-        alt="Creator Telescope"
-      /></a
-    >
+        width="24"
+        height="24"
+        alt="返回列表"
+      />
+      <span>返回列表</span>
+    </a>
   </div>
 
-  <header style="margin-bottom: 32px;padding-bottom: 24px;border-bottom: 1px solid rgba(0, 0, 0, 0.06);">
-    <h1
-      style="display: block;margin: 0 0 8px 0;width: 100%;text-align: center;color: #000000;font-size: 24px;font-weight: 600;line-height: 32px;word-break: break-all;word-wrap: break-word;"
-    >
-      {`Creator Telescope - ${id}`}
-    </h1>
+  <!-- 头部信息 -->
+  <header class="newsletter-header">
+    <div class="header-content">
+      <h1 class="newsletter-title">
+        Creator Telescope
+        <span class="issue-number">第 {id?.replace('weekly-', '')} 期</span>
+      </h1>
+      
+      <div class="date-badge">
+        <span class="date-icon">📅</span>
+        <span class="date-text">{formatDate(date)}</span>
+      </div>
 
-    <p
-      style="display: block;margin: 0;width: 100%;text-align: center;color: #666666;font-size: 16px;padding-top: 0;font-weight: 400;line-height: 24px;word-break: break-all;word-wrap: break-word;"
-    >
-      {summary}
-    </p>
+      {summary && (
+        <p class="newsletter-summary">
+          {summary}
+        </p>
+      )}
+    </div>
   </header>
 
-  <slot />
+  <!-- 内容区域 -->
+  <main class="newsletter-content">
+    <slot />
+  </main>
 
-  <footer style="margin-top: 40px;padding-top: 24px;border-top: 1px solid rgba(0, 0, 0, 0.06);text-align: center;">
-    <p
-      style="display: block;font-size: 13px;color: #666666;font-weight: 400;margin: 0 0 8px 0;padding: 0;line-height: 18px;word-break: break-all;word-wrap: break-word;"
-    >
-      本周刊服务由 <a
-        style="color: #000000;text-decoration: none;font-weight: 500;"
-        title="Colorful"
-        href="https://xiaoa.name"
-        target="_blank">Archer</a
-      > 创造
-    </p>
-
-    <p
-      style="display: block;font-size: 12px;color: #999999;font-weight: 400;margin: 0;padding: 0;line-height: 16px;word-break: break-all;word-wrap: break-word;"
-    >
-      Created at: {date?.toLocaleDateString('zh-CN')}
-    </p>
+  <!-- 页脚 -->
+  <footer class="newsletter-footer">
+    <div class="footer-content">
+      <div class="creator-info">
+        <p class="creator-text">
+          本周刊由 AI Agents 自动收集整理，由 
+          <a href="https://xiaoa.name" target="_blank" class="creator-link">
+            Archer
+          </a> 
+          创造维护
+        </p>
+        
+        <div class="tech-stack">
+          <span class="tech-badge">🤖 AI 驱动</span>
+          <span class="tech-badge">⚡ 自动化</span>
+          <span class="tech-badge">🔄 实时更新</span>
+        </div>
+      </div>
+      
+      <div class="footer-meta">
+        <p class="generation-time">
+          生成时间：{formatDate(date)}
+        </p>
+      </div>
+    </div>
   </footer>
 </div>
+
+<style>
+  .newsletter-container {
+    position: relative;
+    max-width: 100%;
+  }
+
+  /* 返回按钮 */
+  .back-button {
+    margin-bottom: 16px;
+  }
+
+  .back-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px 12px;
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 20px;
+    color: #666666;
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(12px);
+    width: auto;
+    
+    box-shadow: 
+      0 1px 3px rgba(0, 0, 0, 0.04),
+      0 4px 8px rgba(0, 0, 0, 0.02);
+    
+    &:hover {
+      background: rgba(255, 255, 255, 0.95);
+      border-color: rgba(0, 0, 0, 0.12);
+      color: #333333;
+      transform: translateX(-2px);
+      
+      box-shadow: 
+        0 2px 4px rgba(0, 0, 0, 0.08),
+        0 4px 8px rgba(0, 0, 0, 0.04);
+    }
+
+    img {
+      transition: transform 0.2s ease;
+    }
+
+    &:hover img {
+      transform: translateX(-1px);
+    }
+
+    span {
+      font-size: 12px;
+      letter-spacing: 0.01em;
+    }
+  }
+
+  /* 头部样式 */
+  .newsletter-header {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.9) 100%);
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    border-radius: 20px;
+    padding: 32px;
+    margin-bottom: 32px;
+    text-align: center;
+    backdrop-filter: blur(20px);
+    
+    box-shadow: 
+      0 4px 16px rgba(0, 0, 0, 0.03),
+      0 8px 32px rgba(0, 0, 0, 0.02),
+      0 0 0 1px rgba(255, 255, 255, 0.1) inset;
+  }
+
+  .header-content {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    align-items: center;
+  }
+
+  .newsletter-title {
+    margin: 0;
+    color: #1a1a1a;
+    font-size: 28px;
+    font-weight: 700;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+    
+    /* 渐变文字效果 */
+    background: linear-gradient(135deg, #000000 0%, #333333 50%, #1a1a1a 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .issue-number {
+    display: block;
+    font-size: 14px;
+    font-weight: 500;
+    color: #666666;
+    margin-top: 4px;
+    letter-spacing: 0.05em;
+  }
+
+  .date-badge {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    border-radius: 16px;
+    color: #495057;
+    font-size: 13px;
+    font-weight: 500;
+  }
+
+  .date-icon {
+    font-size: 14px;
+  }
+
+  .date-text {
+    letter-spacing: 0.01em;
+  }
+
+  .newsletter-summary {
+    margin: 0;
+    color: #555555;
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 1.6;
+    max-width: 600px;
+    text-align: center;
+    letter-spacing: 0.01em;
+  }
+
+  /* 内容区域 */
+  .newsletter-content {
+    margin-bottom: 48px;
+  }
+
+  /* 页脚样式 */
+  .newsletter-footer {
+    background: linear-gradient(135deg, rgba(248, 249, 250, 0.8) 0%, rgba(241, 243, 244, 0.7) 100%);
+    border: 1px solid rgba(0, 0, 0, 0.04);
+    border-radius: 16px;
+    padding: 24px;
+    backdrop-filter: blur(12px);
+  }
+
+  .footer-content {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    text-align: center;
+  }
+
+  .creator-info {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    align-items: center;
+  }
+
+  .creator-text {
+    margin: 0;
+    color: #666666;
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 1.5;
+  }
+
+  .creator-link {
+    color: #0969da;
+    text-decoration: none;
+    font-weight: 600;
+    transition: color 0.2s ease;
+    
+    &:hover {
+      color: #0550ae;
+    }
+  }
+
+  .tech-stack {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+  }
+
+  .tech-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    background: rgba(255, 255, 255, 0.6);
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    border-radius: 12px;
+    color: #555555;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+  }
+
+  .footer-meta {
+    padding-top: 12px;
+    border-top: 1px solid rgba(0, 0, 0, 0.04);
+  }
+
+  .generation-time {
+    margin: 0;
+    color: #999999;
+    font-size: 12px;
+    font-weight: 400;
+  }
+
+  /* 响应式设计 */
+  @media (max-width: 640px) {
+    .newsletter-header {
+      padding: 24px;
+      border-radius: 16px;
+    }
+    
+    .newsletter-title {
+      font-size: 24px;
+    }
+    
+    .newsletter-summary {
+      font-size: 14px;
+    }
+    
+    .back-link span {
+      display: none;
+    }
+    
+    .tech-stack {
+      gap: 6px;
+    }
+    
+    .tech-badge {
+      font-size: 10px;
+      padding: 3px 8px;
+    }
+  }
+  
+  @media (max-width: 480px) {
+    .newsletter-header {
+      padding: 20px;
+      border-radius: 12px;
+    }
+    
+    .newsletter-title {
+      font-size: 20px;
+    }
+    
+    .newsletter-footer {
+      padding: 20px;
+      border-radius: 12px;
+    }
+    
+  }
+</style>

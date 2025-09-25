@@ -391,6 +391,20 @@ const socialImageURL = new URL(creatorTelescopeLogo.src, Astro.site);
         margin-top: 1.8em;
       }
       
+      /* 覆盖卡片内 h3 的间距 */
+      h3.card__title {
+        font-size: 16px;
+        margin: 8px 0 6px 0;
+        line-height: 1.2;
+      }
+      
+      /* 覆盖周刊标题 h1 的间距 */
+      h1.newsletter-title {
+        margin: 0;
+        font-size: 28px;
+        line-height: 1.2;
+      }
+      
       h1:first-child, h2:first-child, h3:first-child {
         margin-top: 0;
       }

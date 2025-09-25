@@ -1,0 +1,376 @@
+---
+import type { ValidUrl } from "../types";
+
+interface Props {
+  teaser: ValidUrl | undefined;
+  link: ValidUrl | undefined;
+  description: string | undefined;
+  title: string | undefined;
+}
+
+const { teaser, description, title, link } = Astro.props;
+
+// 简单的markdown解析函数
+function parseMarkdown(text: string): string {
+  if (!text) return '';
+  
+  return text
+    // 处理加粗文本 **text** -> <strong>text</strong>
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    // 处理斜体文本 *text* -> <em>text</em>  
+    .replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '<em>$1</em>')
+    // 处理链接 [text](url) -> <a href="url">text</a>
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>')
+    // 处理行内代码 `code` -> <code>code</code>
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    // 处理换行
+    .replace(/\n/g, '<br>')
+    // 处理分隔符
+    .replace(/\s*\|\s*/g, ' <span class="separator">·</span> ')
+    // 保留emoji (不需要处理，浏览器原生支持)
+    ;
+}
+
+// 解析description
+const parsedDescription = description ? parseMarkdown(description) : '';
+
+// 提取来源信息
+function extractSourceInfo(text: string) {
+  const sourceMatch = text.match(/🐙 \*\*GitHub 项目\*\*|🐦 \*\*Twitter 动态\*\*|🔍 \*\*搜索发现\*\*/);
+  if (sourceMatch) {
+    switch(sourceMatch[0]) {
+      case '🐙 **GitHub 项目**':
+        return { type: 'github', icon: '🐙', label: 'GitHub 项目' };
+      case '🐦 **Twitter 动态**':
+        return { type: 'twitter', icon: '🐦', label: 'Twitter 动态' };
+      case '🔍 **搜索发现**':
+        return { type: 'google', icon: '🔍', label: '搜索发现' };
+      default:
+        return null;
+    }
+  }
+  return null;
+}
+
+const sourceInfo = description ? extractSourceInfo(description) : null;
+---
+
+<article class="newsletter-item" data-source={sourceInfo?.type}>
+  <div class="newsletter-item__content">
+    {teaser && (
+      <div class="newsletter-item__teaser">
+        <img src={teaser} alt={title || "预览图"} loading="lazy" />
+      </div>
+    )}
+    
+    <div class="newsletter-item__body">
+      {sourceInfo && (
+        <div class="newsletter-item__source">
+          <span class="source-badge" data-type={sourceInfo.type}>
+            <span class="source-icon">{sourceInfo.icon}</span>
+            <span class="source-label">{sourceInfo.label}</span>
+          </span>
+        </div>
+      )}
+
+      {title && (
+        <h3 class="newsletter-item__title">
+          {title}
+        </h3>
+      )}
+      
+      {parsedDescription && (
+        <div class="newsletter-item__description" set:html={parsedDescription} />
+      )}
+      
+      {link && (
+        <div class="newsletter-item__actions">
+          <a
+            href={link}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="newsletter-item__link"
+          >
+            <span>查看详情</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+              <polyline points="15,3 21,3 21,9"></polyline>
+              <line x1="10" y1="14" x2="21" y2="3"></line>
+            </svg>
+          </a>
+        </div>
+      )}
+    </div>
+  </div>
+</article>
+
+<style>
+  .newsletter-item {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+    padding: 32px 0;
+    margin: 0;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    
+    &:last-child {
+      border-bottom: none;
+    }
+    
+    &:hover {
+      background: linear-gradient(135deg, rgba(0, 0, 0, 0.01) 0%, rgba(0, 0, 0, 0.02) 100%);
+      border-radius: 12px;
+      margin: 0 -20px;
+      padding: 32px 20px;
+    }
+  }
+
+  .newsletter-item__content {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .newsletter-item__teaser {
+    width: 100%;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #fafafa;
+    
+    img {
+      width: 100%;
+      height: auto;
+      display: block;
+      transition: opacity 0.3s ease;
+      
+      &:hover {
+        opacity: 0.95;
+      }
+    }
+  }
+
+  .newsletter-item__body {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .newsletter-item__source {
+    display: flex;
+    align-items: center;
+    margin-bottom: 4px;
+  }
+
+  .source-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 16px;
+    font-size: 12px;
+    font-weight: 500;
+    
+    &[data-type="github"] {
+      background: linear-gradient(135deg, #f6f8fa 0%, #f1f3f4 100%);
+      color: #24292f;
+      border: 1px solid rgba(27, 31, 36, 0.08);
+    }
+    
+    &[data-type="twitter"] {
+      background: linear-gradient(135deg, #e8f5fe 0%, #e1f5fe 100%);
+      color: #1da1f2;
+      border: 1px solid rgba(29, 161, 242, 0.1);
+    }
+    
+    &[data-type="google"] {
+      background: linear-gradient(135deg, #fef7e0 0%, #fef3c7 100%);
+      color: #d97706;
+      border: 1px solid rgba(217, 119, 6, 0.1);
+    }
+  }
+
+  .source-icon {
+    font-size: 14px;
+    line-height: 1;
+  }
+
+  .source-label {
+    font-size: 11px;
+    letter-spacing: 0.01em;
+  }
+
+  .newsletter-item__title {
+    margin: 0;
+    padding: 0;
+    color: #000000;
+    font-size: 20px;
+    font-weight: 600;
+    line-height: 1.4;
+    letter-spacing: -0.01em;
+    word-break: break-word;
+    word-wrap: break-word;
+    
+    /* 渐变悬停效果 */
+    background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    
+    transition: all 0.2s ease;
+    
+    &:hover {
+      background: linear-gradient(135deg, #333333 0%, #000000 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+  }
+  
+  .newsletter-item__description {
+    color: #444444;
+    font-size: 15px;
+    line-height: 1.7;
+    letter-spacing: 0.01em;
+    word-break: break-word;
+    word-wrap: break-word;
+    
+    /* Markdown元素样式 */
+    :global(strong) {
+      font-weight: 600;
+      color: #1a1a1a;
+    }
+    
+    :global(em) {
+      font-style: italic;
+      color: #555555;
+    }
+    
+    :global(code) {
+      background: rgba(0, 0, 0, 0.04);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+      font-size: 13px;
+      color: #d73a49;
+      border: 1px solid rgba(0, 0, 0, 0.06);
+    }
+    
+    :global(a) {
+      color: #0969da;
+      text-decoration: none;
+      border-bottom: 1px solid rgba(9, 105, 218, 0.2);
+      transition: all 0.2s ease;
+      
+      &:hover {
+        color: #0550ae;
+        border-bottom-color: rgba(5, 80, 174, 0.4);
+        background: rgba(9, 105, 218, 0.04);
+        padding: 1px 2px;
+        border-radius: 2px;
+      }
+    }
+    
+    :global(.separator) {
+      color: #999999;
+      margin: 0 4px;
+      font-weight: 400;
+    }
+    
+    :global(br) {
+      line-height: 2;
+    }
+  }
+
+  .newsletter-item__actions {
+    display: flex;
+    align-items: center;
+    margin-top: 8px;
+  }
+
+  .newsletter-item__link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    background: linear-gradient(135deg, #ffffff 0%, #fafafa 100%);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 8px;
+    color: #333333;
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    
+    /* 精致阴影 */
+    box-shadow: 
+      0 1px 2px rgba(0, 0, 0, 0.04),
+      0 2px 4px rgba(0, 0, 0, 0.02),
+      0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+    
+    &:hover {
+      background: linear-gradient(135deg, #f8f9fa 0%, #f1f3f4 100%);
+      border-color: rgba(0, 0, 0, 0.12);
+      color: #000000;
+      transform: translateY(-1px);
+      
+      box-shadow: 
+        0 2px 4px rgba(0, 0, 0, 0.08),
+        0 4px 8px rgba(0, 0, 0, 0.04),
+        0 8px 16px rgba(0, 0, 0, 0.02),
+        0 0 0 1px rgba(255, 255, 255, 0.1) inset;
+      
+      svg {
+        transform: translate(2px, -2px);
+      }
+    }
+    
+    &:active {
+      transform: translateY(0);
+      transition: all 0.1s ease;
+    }
+    
+    svg {
+      transition: transform 0.2s ease;
+      opacity: 0.8;
+    }
+  }
+
+  /* 响应式设计 */
+  @media (max-width: 640px) {
+    .newsletter-item {
+      padding: 24px 0;
+      
+      &:hover {
+        margin: 0 -12px;
+        padding: 24px 12px;
+      }
+    }
+    
+    .newsletter-item__title {
+      font-size: 18px;
+    }
+    
+    .newsletter-item__description {
+      font-size: 14px;
+    }
+  }
+  
+  @media (max-width: 480px) {
+    .newsletter-item {
+      padding: 20px 0;
+      
+      &:hover {
+        margin: 0 -8px;
+        padding: 20px 8px;
+      }
+    }
+    
+    .newsletter-item__title {
+      font-size: 16px;
+    }
+    
+    .newsletter-item__link {
+      padding: 8px 12px;
+      font-size: 12px;
+    }
+  }
+</style>
